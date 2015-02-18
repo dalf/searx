@@ -15,6 +15,20 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 (C) 2013- by Adam Tauber, <asciimoo@gmail.com>
 '''
 
+'''
+  recorded statistics :
+  search
+  engine_name.error (counter)
+  engine_name.score (counter)
+  engine_name.result_count
+  engine_name.result_length
+  engine_name.time.request
+  engine_name.time.search
+  engine_name.time.callback
+  engine_name.time.total
+
+'''
+
 import threading
 import re
 import searx.poolrequests as requests_lib
@@ -30,10 +44,13 @@ from searx.languages import language_codes
 from searx.utils import gen_useragent, get_blocked_engines
 from searx.query import Query
 from searx import logger
+import searx.metrology as metrology
 
 logger = logger.getChild('search')
 
-number_of_searches = 0
+for engine in engines:
+    metrology.init_measure(1000, 200, engine, "result_length")
+    metrology.init_measure(1, 200, engine, "result_count")
 
 
 def search_request_wrapper(fn, url, engine_name, **kwargs):
@@ -41,7 +58,7 @@ def search_request_wrapper(fn, url, engine_name, **kwargs):
         return fn(url, **kwargs)
     except:
         # increase errors stats
-        engines[engine_name].stats['errors'] += 1
+        metrology.counter_inc(engine_name, "error")
 
         # print engine name and specific error message
         logger.exception('engine crash: {0}'.format(engine_name))
@@ -97,14 +114,17 @@ def make_callback(engine_name, results_queue, callback, params):
 
         timeout_overhead = 0.2  # seconds
         search_duration = time() - params['started']
+        metrology.record(search_duration, engine_name, 'time', 'search')
         timeout_limit = engines[engine_name].timeout + timeout_overhead
         if search_duration > timeout_limit:
-            engines[engine_name].stats['page_load_time'] += timeout_limit
-            engines[engine_name].stats['errors'] += 1
+            metrology.counter_inc(engine_name, "error")
+            metrology.record(timeout_limit - params['started'], engine_name, 'time', 'total')
             return
 
         # callback
+        metrology.start_timer(engine_name, 'time', 'callback')
         search_results = callback(response)
+        metrology.end_timer(engine_name, 'time', 'callback')
 
         # add results
         for result in search_results:
@@ -112,8 +132,9 @@ def make_callback(engine_name, results_queue, callback, params):
 
         results_queue.put_nowait((engine_name, search_results))
 
-        # update stats with current page-load-time
-        engines[engine_name].stats['page_load_time'] += search_duration
+        # update stats with current page-load-time and response length
+        metrology.record(len(response.text), engine_name, 'response_length')
+        metrology.record(time() - params['started'], engine_name, 'time', 'total')
 
     return process_callback
 
@@ -423,7 +444,6 @@ class Search(object):
 
     # do search-request
     def search(self, request):
-        global number_of_searches
 
         # init vars
         requests = []
@@ -433,8 +453,8 @@ class Search(object):
         answers = set()
         infoboxes = []
 
-        # increase number of searches
-        number_of_searches += 1
+        # start timer
+        metrology.start_timer("search")
 
         # set default useragent
         # user_agent = request.headers.get('User-Agent', '')
@@ -471,7 +491,9 @@ class Search(object):
 
             # update request parameters dependent on
             # search-engine (contained in engines folder)
+            metrology.start_timer(selected_engine['name'], "time", "request")
             engine.request(self.query.encode('utf-8'), request_params)
+            metrology.end_timer(selected_engine['name'], "time", "request")
 
             if request_params['url'] is None:
                 # TODO add support of offline engines
@@ -511,6 +533,7 @@ class Search(object):
                              selected_engine['name']))
 
         if not requests:
+            metrology.end_timer("search")
             return results, suggestions, answers, infoboxes
         # send all search-request
         threaded_requests(requests)
@@ -537,8 +560,7 @@ class Search(object):
 
         # update engine-specific stats
         for engine_name, engine_results in results.items():
-            engines[engine_name].stats['search_count'] += 1
-            engines[engine_name].stats['result_count'] += len(engine_results)
+            metrology.record(len(engine_results), engine_name, "result_count")
 
         # score results and remove duplications
         results = score_results(results)
@@ -549,8 +571,9 @@ class Search(object):
         # update engine stats, using calculated score
         for result in results:
             for res_engine in result['engines']:
-                engines[result['engine']]\
-                    .stats['score_count'] += result['score']
+                metrology.counter_add(result['score'], result['engine'], "score_count")
+
+        metrology.end_timer("search")
 
         # return results, suggestions, answers and infoboxes
         return results, suggestions, answers, infoboxes

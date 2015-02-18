@@ -18,6 +18,7 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 
 from os.path import realpath, dirname, splitext, join
 import sys
+import searx.metrology as metrology
 from imp import load_source
 from flask.ext.babel import gettext
 from operator import itemgetter
@@ -89,14 +90,6 @@ def load_engine(engine_data):
                   .format(engine.name, engine_attr))
             sys.exit(1)
 
-    engine.stats = {
-        'result_count': 0,
-        'search_count': 0,
-        'page_load_time': 0,
-        'score_count': 0,
-        'errors': 0
-    }
-
     if hasattr(engine, 'categories'):
         for category_name in engine.categories:
             categories.setdefault(category_name, []).append(engine)
@@ -115,40 +108,54 @@ def load_engine(engine_data):
 def get_engines_stats():
     # TODO refactor
     pageloads = []
+    callbacks = []
     results = []
     scores = []
     errors = []
     scores_per_result = []
 
-    max_pageload = max_results = max_score = max_errors = max_score_per_result = 0  # noqa
+    max_pageload = max_callback = max_results = max_score = max_errors = max_score_per_result = 0  # noqa
     for engine in engines.values():
-        if engine.stats['search_count'] == 0:
+        engine_name = engine.name
+        measure_result_count = metrology.measure(engine_name, 'result_count')
+        search_count = measure_result_count.count
+        if search_count == 0:
             continue
-        results_num = \
-            engine.stats['result_count'] / float(engine.stats['search_count'])
-        load_times = engine.stats['page_load_time'] / float(engine.stats['search_count'])  # noqa
+
+        results_num = measure_result_count.get_average()
+        load_times = metrology.measure(engine_name, 'time', 'search').get_average()  # noqa
+        callback_times = metrology.measure(engine_name, 'time', 'callback').get_average()  # noqa
+        total_times = metrology.measure(engine_name, 'time', 'total').get_average()  # noqa
         if results_num:
-            score = engine.stats['score_count'] / float(engine.stats['search_count'])  # noqa
+            score = metrology.counter(engine_name, 'score_count') / float(search_count)  # noqa
             score_per_result = score / results_num
         else:
             score = score_per_result = 0.0
         max_results = max(results_num, max_results)
         max_pageload = max(load_times, max_pageload)
+        max_callback = max(callback_times, max_callback)
         max_score = max(score, max_score)
         max_score_per_result = max(score_per_result, max_score_per_result)
-        max_errors = max(max_errors, engine.stats['errors'])
-        pageloads.append({'avg': load_times, 'name': engine.name})
-        results.append({'avg': results_num, 'name': engine.name})
-        scores.append({'avg': score, 'name': engine.name})
-        errors.append({'avg': engine.stats['errors'], 'name': engine.name})
+        max_errors = max(max_errors, metrology.counter(engine_name, 'errors'))
+        pageloads.append({'avg': load_times, 'name': engine_name, 'avgTotal': total_times})
+        callbacks.append({'avg': callback_times, 'name': engine_name, 'avgTotal': total_times})
+        results.append({'avg': results_num, 'name': engine_name})
+        scores.append({'avg': score, 'name': engine_name})
+        errors.append({'avg': metrology.counter(engine_name, 'errors'), 'name': engine_name})
         scores_per_result.append({
             'avg': score_per_result,
-            'name': engine.name
+            'name': engine_name
         })
 
     for engine in pageloads:
         if max_pageload:
             engine['percentage'] = int(engine['avg'] / max_pageload * 100)
+        else:
+            engine['percentage'] = 0
+
+    for engine in callbacks:
+        if max_callback:
+            engine['percentage'] = int(engine['avg'] / max_callback * 100)
         else:
             engine['percentage'] = 0
 
@@ -180,7 +187,11 @@ def get_engines_stats():
     return [
         (
             gettext('Page loads (sec)'),
-            sorted(pageloads, key=itemgetter('avg'))
+            sorted(pageloads, key=itemgetter('avgTotal'))
+        ),
+        (
+            gettext('Parse time (sec)'),
+            sorted(callbacks, key=itemgetter('avgTotal'))
         ),
         (
             gettext('Number of results'),
