@@ -17,21 +17,24 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 
 '''
   recorded statistics :
-  search
-  engine_name.error (counter)
-  engine_name.score (counter)
-  engine_name.result_count
-  engine_name.result_length
-  engine_name.time.request
-  engine_name.time.search
-  engine_name.time.callback
-  engine_name.time.total
-
+  search.time                   - measure, response time
+  engine_name.score             - counter, score for the engine
+  engine_name.result.count      - measure, result count per request
+  engine_name.result.length     - measure, response length in byte per request
+  engine_name.time.request      - measure, response time for the "request" function
+  engine_name.time.search       - measure, response time for the HTTP request
+  engine_name.time.callback     - measure, response time for the "response" function
+  engine_name.time.total        - measure, response time for the three previous
+  engine_name.error             - counter, exception count (include the following counters)
+  engine_name.error.timeout     - counter, timeout exception count
+  engine_name.error.requests    - counter, other requests lib exception count
 '''
 
 import threading
 import re
 import searx.poolrequests as requests_lib
+from requests import ConnectionError, RequestException
+from requests.exceptions import Timeout
 from itertools import izip_longest, chain
 from operator import itemgetter
 from Queue import Queue
@@ -48,21 +51,36 @@ import searx.metrology as metrology
 
 logger = logger.getChild('search')
 
+# initialize metrology
+metrology.init_measure(0.1, 30, "search", "time")
 for engine in engines:
-    metrology.init_measure(1000, 200, engine, "result_length")
-    metrology.init_measure(1, 200, engine, "result_count")
+    metrology.init_measure(1024, 200, engine, "result", "length")
+    metrology.init_measure(1, 100, engine, "result", "count")
+    metrology.init_measure(0.1, 30, engine, "time", "request")
+    metrology.init_measure(0.1, 30, engine, "time", "search")
+    metrology.init_measure(0.1, 30, engine, "time", "callback")
+    metrology.init_measure(0.1, 30, engine, "time", "total")
 
 
 def search_request_wrapper(fn, url, engine_name, **kwargs):
     try:
         return fn(url, **kwargs)
-    except:
+    except Exception as e:
         # increase errors stats
-        metrology.counter_inc(engine_name, "error")
+        metrology.counter_inc(engine_name, 'error')
 
-        # print engine name and specific error message
-        logger.exception('engine crash: {0}'.format(engine_name))
-        return
+        # 
+        if (issubclass(e.__class__, Timeout)):
+            # timeout (connect or read)
+            logger.warning("{0} : engine timeout ({1})".format(engine_name, e.__class__.__name__))
+            metrology.counter_inc(engine_name, 'error', 'timeout')
+        elif (issubclass(e.__class__, RequestException)):
+            # other requests exception
+            logger.exception("{0} : engine requests exception : {1}".format(engine_name, e))
+            metrology.counter_inc(engine_name, 'error', 'requests')
+        else:
+            # others errors
+            logger.exception('{0} : engine exception : {1}'.format(engine_name, e))
 
 
 def threaded_requests(requests):
@@ -84,7 +102,7 @@ def threaded_requests(requests):
             remaining_time = max(0.0, timeout_limit - (time() - search_start))
             th.join(remaining_time)
             if th.isAlive():
-                logger.warning('engine timeout: {0}'.format(th._engine_name))
+                logger.warning('{0} : engine timeout (waiting for threads)'.format(th._engine_name))
 
 
 # get default reqest parameter
@@ -117,23 +135,26 @@ def make_callback(engine_name, results_queue, callback, params):
         metrology.record(search_duration, engine_name, 'time', 'search')
         timeout_limit = engines[engine_name].timeout + timeout_overhead
         if search_duration > timeout_limit:
-            metrology.counter_inc(engine_name, "error")
+            metrology.counter_inc(engine_name, 'error')
+            metrology.counter_inc(engine_name, 'error', 'timeout')
             metrology.record(timeout_limit - params['started'], engine_name, 'time', 'total')
-            return
+            logger.warning("{0} : engine timeout, response in {1}, max {2}".format(engine_name, search_duration, timeout_limit))
+            # no callback but to keep the average consistant with the search time
+            metrology.record(0, engine_name, 'time', 'callback')
+        else:
+            # callback
+            metrology.start_timer(engine_name, 'time', 'callback')
+            search_results = callback(response)
+            metrology.end_timer(engine_name, 'time', 'callback')
 
-        # callback
-        metrology.start_timer(engine_name, 'time', 'callback')
-        search_results = callback(response)
-        metrology.end_timer(engine_name, 'time', 'callback')
+            # add results
+            for result in search_results:
+                result['engine'] = engine_name
 
-        # add results
-        for result in search_results:
-            result['engine'] = engine_name
-
-        results_queue.put_nowait((engine_name, search_results))
+            results_queue.put_nowait((engine_name, search_results))
 
         # update stats with current page-load-time and response length
-        metrology.record(len(response.text), engine_name, 'response_length')
+        metrology.record(len(response.text), engine_name, 'response', 'length')
         metrology.record(time() - params['started'], engine_name, 'time', 'total')
 
     return process_callback
@@ -146,6 +167,13 @@ def content_result_len(content):
         return len(content)
     else:
         return 0
+
+
+def get_engine_weight(engine):
+    weight = 1.0
+    if hasattr(engines[engine], 'weight'):
+        weight = float(engines[engine].weight)
+    return weight
 
 
 # score results and remove duplications
@@ -178,8 +206,7 @@ def score_results(results):
                                     res['content'].strip().replace('\n', ''))
 
         # get weight of this engine if possible
-        if hasattr(engines[res['engine']], 'weight'):
-            weight = float(engines[res['engine']].weight)
+        weight = get_engine_weight(res['engine'])
 
         # calculate score for that engine
         score = int((flat_len - i) / engines_len) * weight + 1
@@ -215,6 +242,8 @@ def score_results(results):
 
             # add engine to list of result-engines
             duplicated['engines'].append(res['engine'])
+            if get_engine_weight(duplicated['engine']) < weight:
+                duplicated['engine'] = res['engine']
 
             # using https if possible
             if duplicated['parsed_url'].scheme == 'https':
@@ -560,7 +589,7 @@ class Search(object):
 
         # update engine-specific stats
         for engine_name, engine_results in results.items():
-            metrology.record(len(engine_results), engine_name, "result_count")
+            metrology.record(len(engine_results), engine_name, "result", "count")
 
         # score results and remove duplications
         results = score_results(results)
@@ -573,7 +602,7 @@ class Search(object):
             for res_engine in result['engines']:
                 metrology.counter_add(result['score'], result['engine'], "score_count")
 
-        metrology.end_timer("search")
+        metrology.end_timer("search", "time")
 
         # return results, suggestions, answers and infoboxes
         return results, suggestions, answers, infoboxes

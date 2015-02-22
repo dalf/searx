@@ -1,33 +1,138 @@
 {% extends "oscar/base.html" %}
 {% block title %}{{ _('stats') }} - {% endblock %}
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery.jqplot.min.css') }}" />
+{% endblock %}
 {% block content %}
 <div class="container-fluid">
     <h1>{{ _('Engine stats') }}</h1>
     <div class="row">
-        {% for stat_name,stat_category in stats %}
-        <div class="col-xs-12 col-sm-12 col-md-6">
-            <h3>{{ stat_name }}</h3>
-            <div class="container-fluid">
-                {% for engine in stat_category %}
-                <div class="row">
-                    <div class="col-sm-4 col-md-4">{{ engine.name }}</div>
-                    <div class="col-sm-8 col-md-8">
-                        <div class="progress">
-                            <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="{{ '%i'|format(engine.avg) }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ engine.percentage }}%;">
-                                {{ '%.02f'|format(engine.avg) }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-                {% if not stat_category %}
-                <div class="col-sm-12 col-md-12">
-                    {% include 'oscar/messages/no_data_available.html' %}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
+      <h3>{{ _('Scores') }}</h3>
+      <div id="engine_scores" style="width:100%; height:35em; position:relative"></div>
+      <h3>{{ _('Errors') }}</h3>
+      <div id="engine_errors" style="width:100%; height:{{ stats.error.height }}em; position:relative"></div>
+      <h3>{{ _('Page loads (sec)') }}</h3>
+      <div id="engine_times" style="width:100%; height:{{ stats.time.height }}em; position:relative"></div>
     </div>
 </div>
+{% endblock %}
+{% block bottom %}
+    <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/excanvas.js') }}"></script><![endif]-->
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jquery.jqplot.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.barRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.categoryAxisRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.pointLabels.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.bubbleRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.cursor.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.canvasTextRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.canvasAxisLabelRenderer.min.js') }}"></script>
+
+    <script type="text/javascript">
+var s_time_search = {{ stats.time.search }};
+var s_time_callback = {{ stats.time.callback }};
+var s_time_engine = {{ stats.time.engine | safe }};
+var s_score = {{ stats.score | safe }};
+var s_time_avg_detail = {{ stats.time.detail | safe }};
+
+var s_error_engine = {{ stats.error.engine | safe }};
+var s_error_other = {{ stats.error.other }};
+var s_error_requests = {{ stats.error.requests }};
+var s_error_timeout = {{ stats.error.timeout }};
+
+$(document).ready(function(){
+
+if (s_time_engine.length > 0) {
+  $.jqplot('engine_times', [s_time_search, s_time_callback], {
+    stackSeries: true,
+    seriesDefaults:{
+      renderer:$.jqplot.BarRenderer,
+      rendererOptions: {
+          barMargin: 5,
+          barDirection: 'horizontal',
+      },
+      pointLabels: {show: true}
+    },
+    series : [
+      { label : 'Request time (sec)' }, { label : 'Parsing time (sec)' }
+    ],
+    axes: {
+      xaxis: {
+          label: '{{ _('Page loads (sec)') }}',
+          labelRenderer: $.jqplot.CanvasAxisLabelRenderer
+      },
+      yaxis: {
+          renderer: $.jqplot.CategoryAxisRenderer,
+          ticks: s_time_engine
+      }
+    },
+    legend: {
+      show: true,
+    }     
+  });
+}
+
+if (s_error_engine.length > 0) {
+  $.jqplot('engine_errors', [s_error_timeout, s_error_requests, s_error_other], {
+    stackSeries: true,
+    seriesDefaults:{
+      renderer:$.jqplot.BarRenderer,
+      rendererOptions: {
+          barMargin: 5,
+          barDirection: 'horizontal',
+      },
+      pointLabels: {show: true}
+    },
+    series : [
+      { label : '{{ _('Timeout errors') }}' }, 
+      { label : '{{ _('Requests errors') }}' },
+      { label : '{{ _('Other errors') }}' }
+    ],
+    axes: {
+      xaxis: {
+          label: '{{ _('Errors') }}',
+          labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+          ticks: {{ stats.error.ticks }},
+      },
+      yaxis: {
+          renderer: $.jqplot.CategoryAxisRenderer,
+          ticks: s_error_engine
+      }
+    },
+    legend: {
+      show: true,
+    }     
+  });
+}
+
+  $.jqplot('engine_scores',[s_score],{
+        seriesDefaults:{
+            renderer: $.jqplot.BubbleRenderer,
+            rendererOptions: {
+                bubbleAlpha: 0.0,
+                highlightAlpha: 0.4
+            },
+            shadow: false
+        },
+        axes: {
+            xaxis: {
+               label: '{{ _('Number of results') }}',
+               labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+               min: -5,
+            },
+            yaxis: {
+               label: '{{ _('Scores per result') }}',
+               labelRenderer: $.jqplot.CanvasAxisLabelRenderer,
+               min: -10,
+               pad: 1, 
+               showTicks: false
+            }
+        },
+      cursor:{
+        show: false,
+        showTooltip:true
+      } 
+  });
+
+});
+    </script>
 {% endblock %}

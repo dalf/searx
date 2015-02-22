@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, with_statement
 from time import time
 from searx import logger
 import threading
@@ -43,17 +43,24 @@ class Measure(object):
 
     def get_qp(self):
         ''' Quartile in percentage '''
-        return [int(q*100/self.count) for q in self.quartiles]
+        if self.count > 0:
+            return [int(q*100/self.count) for q in self.quartiles]
+        else:
+            return self.quartiles
 
     def get_qpmap(self):
         result = {}
         x = 0
-        for y in self.quartiles:
-            yp = int(y*100/self.count)
-            if yp != 0:
-                result[x] = yp
-            x += self.width
-        return result
+        if self.count > 0:
+            for y in self.quartiles:
+                yp = int(y*100/self.count)
+                if yp != 0:
+                    result[x] = yp
+                x += self.width
+            return result
+    
+    def __repr__(self):
+        return "Measure<avg: " + str(self.get_average()) + ", count: "+ str(self.get_count()) +">"
 
 
 class Statistics(object):
@@ -61,39 +68,49 @@ class Statistics(object):
     def __init__(self):
         self.measures = {}
         self.counters = {}
+        self.lock = threading.RLock()
 
     def init_measure(self, width, size, *args):
-        measure = self.measures.get(args, None)
-        if measure is None:
-            measure = Measure(width, size)
-            self.measures[args] = measure
-        return measure
+        with self.lock:
+            measure = self.measures.get(args, None)
+            if measure is None:
+                measure = Measure(width, size)
+                self.measures[args] = measure
+            return measure
 
     def counter(self, *args):
-        return self.counters.get(args, 0)
+        with self.lock:
+            # logger.debug("Counter for {0} : {1}".format(args, self.counters.get(args, 0)))
+            return self.counters.get(args, 0)
 
     def get(self, *args):
-        measure = self.measures.get(args, None)
-        if measure is None:
-            measure = Measure()
-            self.measures[args] = measure
-        return measure
+        with self.lock:
+            measure = self.measures.get(args, None)
+            if measure is None:
+                measure = Measure()
+                self.measures[args] = measure
+            return measure
 
     def record(self, value, *args):
-        self.get(*args).record(value)
-        # logger.debug("Value for {0} : {1}".format(args, value))
+        with self.lock:
+            self.get(*args).record(value)
+            # logger.debug("Value for {0} : {1}".format(args, value))
 
     def counter_add(self, value, *args):
-        self.counters[args] = value + self.counters.get(args, long(0))
-        # logger.debug("Counter for {0} : {1}".format(args, self.counters[args]))
+        with self.lock:
+            self.counters[args] = value + self.counters.get(args, long(0))
+            # logger.debug("Counter for {0} : {1}".format(args, self.counters[args]))
 
 
 statistics = Statistics()
-timers = {}
+
+threadlocal_dict = threading.local()
+threadlocal_dict.timers = {}
+timers = threadlocal_dict.timers
 
 
 def record(value, *args):
-    global statistics
+    global statistics    
     statistics.record(value, *args)
 
 
@@ -109,16 +126,17 @@ def counter_add(value, *args):
 
 def start_timer(*args):
     global timers
-    timers[args, threading.current_thread().ident] = time()
+    timers[args] = time()
 
 
 def end_timer(*args):
     global timers, statistics
-    previous_time = timers[args, threading.current_thread().ident]
-    if previous_time is not None:
-        timers[args, threading.current_thread().ident] = None
-        duration = time() - previous_time
-        statistics.record(duration, *args)
+    if args in timers:
+        previous_time = timers[args]
+        if previous_time is not None:
+            timers[args] = None
+            duration = time() - previous_time
+            statistics.record(duration, *args)
 
 
 def measure(*args):

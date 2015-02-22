@@ -26,9 +26,11 @@ import json
 import cStringIO
 import os
 import hashlib
+import searx.metrology as metrology
 
 from datetime import datetime, timedelta
 from urllib import urlencode
+from operator import itemgetter
 from werkzeug.contrib.fixers import ProxyFix
 from flask import (
     Flask, request, render_template, url_for, Response, make_response,
@@ -38,7 +40,7 @@ from flask.ext.babel import Babel, gettext, format_date
 from searx import settings, searx_dir
 from searx.poolrequests import get as http_get
 from searx.engines import (
-    categories, engines, get_engines_stats, engine_shortcuts
+    categories, engines, engine_shortcuts
 )
 from searx.utils import (
     UnicodeWriter, highlight_content, html_to_text, get_themes,
@@ -621,13 +623,144 @@ def image_proxy():
     return Response(img, mimetype=resp.headers['content-type'], headers=headers)
 
 
+def get_engines_stats():
+    stats = []
+    max_error = max_score_per_result = 0 # noqa
+
+    for engine in engines.values():
+        engine_name = engine.name        
+        measure_result_count = metrology.measure(engine_name, 'result', 'count')
+        search_count = measure_result_count.count
+        result_count = measure_result_count.get_average()
+        if search_count > 0:
+            score = metrology.counter(engine_name, 'score_count') / float(search_count)  # noqa
+            if result_count > 0:
+                score_per_result = score / result_count
+            else:
+                score_per_result = 0
+        else:
+            score = score_per_result = 0.0
+
+        stat = {
+            'name' : engine_name,
+            'time_request' : metrology.measure(engine_name, 'time', 'request').get_average(),  # noqa
+            'time_search' : metrology.measure(engine_name, 'time', 'search').get_average(),  # noqa
+            'time_callback' : metrology.measure(engine_name, 'time', 'callback').get_average(),  # noqa
+            # 'time_total' : metrology.measure(engine_name, 'time', 'total').get_average(),  # noqa
+            'result_count' : result_count,
+            'error_count' : int(metrology.counter(engine_name, 'error')),
+            'error_timeout_count' : int(metrology.counter(engine_name, 'error', 'timeout')),
+            'error_requests_count' : int(metrology.counter(engine_name, 'error', 'requests')),
+            'score' : score,
+            'score_per_result' : score_per_result
+            }
+
+        stat['time_total'] = stat['time_request'] + stat['time_search'] + stat['time_callback']
+        stat['time_total_detail'] = metrology.measure(engine_name, 'time', 'total').get_qp()
+        stat['error_other_count'] = stat['error_count'] - stat['error_requests_count'] - stat['error_timeout_count']
+
+        max_error = max(max_error, stat['error_count'])
+        max_score_per_result = max(max_score_per_result, stat['score_per_result'])
+
+        if search_count or stat['error_count'] > 0:
+            stats.append(stat)
+    
+    # time
+    stats_time = sorted(stats, key=itemgetter('time_total'), reverse=True)
+    stats_time_detail = {}
+    for stat in stats:
+        stats_time_detail[stat['name']] = stat['time_total_detail']
+
+    # errors
+    stats_error = []
+    for stat in stats:
+        if stat['error_count'] > 0:
+            stats_error.append(stat)
+    stats_error = sorted(stats_error, key=itemgetter('error_count'))
+
+    # score
+    stats_score = []
+    max_score_per_result = 0
+    for stat in stats:
+        max_score_per_result = max(max_score_per_result, stat["score_per_result"])
+        stats_score.append(
+            [ stat["result_count"], stat["score_per_result"], stat["time_total"], stat["name"],
+              stat["score"]
+              ]
+            )
+
+    stats_score = sorted(stats_score, key=lambda x : x[4], reverse=True)
+
+    if max_score_per_result > 0:
+        score_step = max_score_per_result / 400 * 20
+    else:
+        score_step = 1
+
+    def shift_y(stat, offset, avoid):
+        y = stat[1]
+        for s in stats_score:
+            if s[1] >= y and s != avoid:
+                s[1] += offset
+    
+    # buble chart : make it readable by avoiding collision between bubles
+    # implementation : no merge, x is never changed, only y is adjusted
+    # when a collision is found, all (x,y) above are moved to keep the order
+    # in other words, that's mean the absolute value y is meaningless, 
+    # but the order is preserved.
+    # collision = nearby x distance < 4 and nearby y < score_step
+    # x = result count, y = score per result
+    for stat in stats_score:
+        restart = True
+        # safeguard : no more iteration than the (x,y) count
+        maxIter = len(stats_score)
+        # for each collision restart all tests, restart until nothing move
+        while restart and maxIter>0:
+            restart = False
+            maxIter -= 1
+            # for each other (x,y), test collision
+            # Warning : found only collision where stat is bellow s on y dimension
+            for s in stats_score:
+                if s != stat:
+                    d1 = s[0] - stat[0]
+                    d2 = s[1] - stat[1]
+                    if (abs(d1) < 4) and d2 < score_step*2 and d2 >= 0:
+                        # collision found (stat is above)
+                        # move all (x,y) above stat to avoid collision
+                        shift_y(s, score_step*3, stat)
+                        # everything may has changed : restart
+                        restart = True
+                        break
+
+    # return result
+    return {
+        'time': {
+            'engine': [e.get('name') for e in stats_time],
+            'request': [e.get('time_request') for e in stats_time],
+            'search': [e.get('time_search') for e in stats_time],
+            'callback': [e.get('time_callback') for e in stats_time],
+            'total': [e.get('time_total') for e in stats_time],
+            'detail' : stats_time_detail,
+            'height' : len(stats) *1.6 + 5
+            },
+        'error': {
+            'engine': [e.get('name') for e in stats_error],
+            'other': [e.get('error_other_count') for e in stats_error],
+            'requests': [e.get('error_requests_count') for e in stats_error],
+            'timeout': [e.get('error_timeout_count') for e in stats_error],
+            'height': len(stats_error)*1.6 + 5,
+            'ticks': range(0, max_error+1)
+            },
+        'score' : stats_score,
+        'count' : len(stats),
+        }
+
+
 @app.route('/stats', methods=['GET'])
 def stats():
     """Render engine statistics page."""
-    stats = get_engines_stats()
     return render(
         'stats.html',
-        stats=stats,
+        stats=get_engines_stats(),
     )
 
 

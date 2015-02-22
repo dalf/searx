@@ -1,7 +1,7 @@
 from lxml import html
 from urllib import urlencode, unquote
 from urlparse import urlparse, urljoin
-from lxml.etree import _ElementStringResult, _ElementUnicodeResult
+from lxml.etree import _ElementStringResult, _ElementUnicodeResult, XPath
 from searx.utils import html_to_text
 
 search_url = None
@@ -34,7 +34,7 @@ def extract_text(xpath_results):
         return ''.join(xpath_results)
     else:
         # it's a element
-        return html_to_text(xpath_results.text_content()).strip()
+        return html_to_text(XPath("string()")(xpath_results)).strip()
 
 
 def extract_url(xpath_results, search_url):
