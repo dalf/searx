@@ -18,6 +18,8 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 '''
   recorded statistics :
   search.time                   - measure, response time
+  render.time                   - measure, response time
+  engine_name.search.count      - counter, search count
   engine_name.score             - counter, score for the engine
   engine_name.result.count      - measure, result count per request
   engine_name.result.length     - measure, response length in byte per request
@@ -33,7 +35,7 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 import threading
 import re
 import searx.poolrequests as requests_lib
-from requests import ConnectionError, RequestException
+from requests import RequestException
 from requests.exceptions import Timeout
 from itertools import izip_longest, chain
 from operator import itemgetter
@@ -69,7 +71,7 @@ def search_request_wrapper(fn, url, engine_name, **kwargs):
         # increase errors stats
         metrology.counter_inc(engine_name, 'error')
 
-        # 
+        # increase counter and log the exception
         if (issubclass(e.__class__, Timeout)):
             # timeout (connect or read)
             logger.warning("{0} : engine timeout ({1})".format(engine_name, e.__class__.__name__))
@@ -138,7 +140,8 @@ def make_callback(engine_name, results_queue, callback, params):
             metrology.counter_inc(engine_name, 'error')
             metrology.counter_inc(engine_name, 'error', 'timeout')
             metrology.record(timeout_limit - params['started'], engine_name, 'time', 'total')
-            logger.warning("{0} : engine timeout, response in {1}, max {2}".format(engine_name, search_duration, timeout_limit))
+            logger.warning("{0} : engine timeout, response in {1}, max {2}"
+                           .format(engine_name, search_duration, timeout_limit))
             # no callback but to keep the average consistant with the search time
             metrology.record(0, engine_name, 'time', 'callback')
         else:
@@ -560,6 +563,9 @@ class Search(object):
             requests.append((req, request_params['url'],
                              request_args,
                              selected_engine['name']))
+
+            # upstream search count for this engine
+            metrology.counter_inc(selected_engine['name'], 'search', 'count')
 
         if not requests:
             metrology.end_timer("search")

@@ -1,22 +1,16 @@
 {% extends "courgette/base.html" %}
-{% block head %} {% endblock %}
+{% block head %} 
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/jquery.jqplot.min.css') }}" />
+    <style>
+      .jqplot-table-legend { width: auto; }
+      table tr { background: none !important; }
+      .row { max-width: 1400px; }
+    </style>
+{% endblock %}
 {% block content %}
-<h2>{{ _('Engine stats') }}</h2>
-
-{% for stat_name,stat_category in stats %}
-<div class="left">
-    <table>
-        <tr>
-            <th colspan="3">{{ stat_name }}</th>
-        </tr>
-        {% for engine in stat_category %}
-        <tr>
-            <td>{{ engine.name }}</td>
-            <td>{{ '%.02f'|format(engine.avg) }}</td>
-            <td class="percentage"><div style="width: {{ engine.percentage }}%">&nbsp;</div></td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-{% endfor %}
+{% include 'default/stats.content.html' %}
+{% endblock %}
+{% block bottom %}
+    <script src="{{ url_for('static', filename='js/jquery-1.11.1.min.js') }}"></script>
+{% include 'default/stats.js.html' %}
 {% endblock %}

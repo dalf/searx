@@ -58,9 +58,9 @@ class Measure(object):
                     result[x] = yp
                 x += self.width
             return result
-    
+
     def __repr__(self):
-        return "Measure<avg: " + str(self.get_average()) + ", count: "+ str(self.get_count()) +">"
+        return "Measure<avg: " + str(self.get_average()) + ", count: " + str(self.get_count()) + ">"
 
 
 class Statistics(object):
@@ -110,7 +110,7 @@ timers = threadlocal_dict.timers
 
 
 def record(value, *args):
-    global statistics    
+    global statistics
     statistics.record(value, *args)
 
 

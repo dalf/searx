@@ -1,0 +1,13 @@
+    <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/excanvas.js') }}"></script><![endif]-->
+    <script type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jquery.jqplot.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.barRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.categoryAxisRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.pointLabels.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.bubbleRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.cursor.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.canvasTextRenderer.min.js') }}"></script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/jqplot/jqplot.canvasAxisLabelRenderer.min.js') }}"></script>
+    <script type="text/javascript" type="text/javascript">
+var stats = {{ stats | tojson | safe }};
+    </script>
+    <script language="javascript" type="text/javascript" src="{{ url_for('static', filename='js/stats.js') }}"></script>

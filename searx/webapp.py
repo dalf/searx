@@ -89,6 +89,10 @@ app.secret_key = settings['server']['secret_key']
 
 babel = Babel(app)
 
+metrology.init_measure(0.1, 30, 'search', 'time')
+metrology.init_measure(0.1, 30, 'search', 'time', 'search')
+metrology.init_measure(0.1, 30, 'search', 'time', 'render')
+
 rtl_locales = ['ar', 'arc', 'bcc', 'bqi', 'ckb', 'dv', 'fa', 'glk', 'he',
                'ku', 'mzn', 'pnb'', ''ps', 'sd', 'ug', 'ur', 'yi']
 
@@ -325,9 +329,19 @@ def index():
             'index.html',
         )
 
+    # start global timer
+    metrology.start_timer("search", "time")
+
+    # search
+    metrology.start_timer("search", "time", "search")
     search.results, search.suggestions,\
         search.answers, search.infoboxes = search.search(request)
+    metrology.end_timer("search", "time", "search")
 
+    # start render timer
+    metrology.start_timer("search", "time", "render")
+
+    # for each results
     for result in search.results:
 
         if not search.paging and engines[result['engine']].paging:
@@ -368,11 +382,15 @@ def index():
             else:
                 result['publishedDate'] = format_date(result['publishedDate'])
 
-    if search.request_data.get('format') == 'json':
-        return Response(json.dumps({'query': search.query,
+    # response
+    response_format = search.request_data.get('format')
+    metrology.start_timer("search", "time", "render", response_format)
+
+    if response_format == 'json':
+        resp = Response(json.dumps({'query': search.query,
                                     'results': search.results}),
                         mimetype='application/json')
-    elif search.request_data.get('format') == 'csv':
+    elif response_format == 'csv':
         csv = UnicodeWriter(cStringIO.StringIO())
         keys = ('title', 'url', 'content', 'host', 'engine', 'score')
         if search.results:
@@ -381,11 +399,10 @@ def index():
                 row['host'] = row['parsed_url'].netloc
                 csv.writerow([row.get(key, '') for key in keys])
             csv.stream.seek(0)
-        response = Response(csv.stream.read(), mimetype='application/csv')
+        resp = Response(csv.stream.read(), mimetype='application/csv')
         cont_disp = 'attachment;Filename=searx_-_{0}.csv'.format(search.query)
-        response.headers.add('Content-Disposition', cont_disp)
-        return response
-    elif search.request_data.get('format') == 'rss':
+        resp.headers.add('Content-Disposition', cont_disp)
+    elif response_format == 'rss':
         response_rss = render(
             'opensearch_response_rss.xml',
             results=search.results,
@@ -393,22 +410,31 @@ def index():
             number_of_results=len(search.results),
             base_url=get_base_url()
         )
-        return Response(response_rss, mimetype='text/xml')
+        resp = Response(response_rss, mimetype='text/xml')
+    else:
+        response_format = 'html'
+        resp = render(
+            'results.html',
+            results=search.results,
+            q=search.request_data['q'],
+            selected_categories=search.categories,
+            paging=search.paging,
+            pageno=search.pageno,
+            base_url=get_base_url(),
+            suggestions=search.suggestions,
+            answers=search.answers,
+            infoboxes=search.infoboxes,
+            theme=get_current_theme_name(),
+            favicons=global_favicons[themes.index(get_current_theme_name())]
+            )
 
-    return render(
-        'results.html',
-        results=search.results,
-        q=search.request_data['q'],
-        selected_categories=search.categories,
-        paging=search.paging,
-        pageno=search.pageno,
-        base_url=get_base_url(),
-        suggestions=search.suggestions,
-        answers=search.answers,
-        infoboxes=search.infoboxes,
-        theme=get_current_theme_name(),
-        favicons=global_favicons[themes.index(get_current_theme_name())]
-    )
+    # end timers
+    metrology.end_timer("search", "time", "render")
+    metrology.end_timer("search", "time", "render", response_format)
+    metrology.end_timer("search", "time")
+
+    # return resp
+    return resp
 
 
 @app.route('/about', methods=['GET'])
@@ -625,12 +651,12 @@ def image_proxy():
 
 def get_engines_stats():
     stats = []
-    max_error = max_score_per_result = 0 # noqa
+    max_error = max_score_per_result = 0  # noqa
 
     for engine in engines.values():
-        engine_name = engine.name        
+        engine_name = engine.name
         measure_result_count = metrology.measure(engine_name, 'result', 'count')
-        search_count = measure_result_count.count
+        search_count = metrology.counter(engine_name, 'search', 'count')
         result_count = measure_result_count.get_average()
         if search_count > 0:
             score = metrology.counter(engine_name, 'score_count') / float(search_count)  # noqa
@@ -642,17 +668,18 @@ def get_engines_stats():
             score = score_per_result = 0.0
 
         stat = {
-            'name' : engine_name,
-            'time_request' : metrology.measure(engine_name, 'time', 'request').get_average(),  # noqa
-            'time_search' : metrology.measure(engine_name, 'time', 'search').get_average(),  # noqa
-            'time_callback' : metrology.measure(engine_name, 'time', 'callback').get_average(),  # noqa
-            # 'time_total' : metrology.measure(engine_name, 'time', 'total').get_average(),  # noqa
-            'result_count' : result_count,
-            'error_count' : int(metrology.counter(engine_name, 'error')),
-            'error_timeout_count' : int(metrology.counter(engine_name, 'error', 'timeout')),
-            'error_requests_count' : int(metrology.counter(engine_name, 'error', 'requests')),
-            'score' : score,
-            'score_per_result' : score_per_result
+            'name': engine_name,
+            'time_request': metrology.measure(engine_name, 'time', 'request').get_average(),  # noqa
+            'time_search': metrology.measure(engine_name, 'time', 'search').get_average(),  # noqa
+            'time_callback': metrology.measure(engine_name, 'time', 'callback').get_average(),  # noqa
+            # 'time_total': metrology.measure(engine_name, 'time', 'total').get_average(),  # noqa
+            'result_count': result_count,
+            'search_count': search_count,
+            'error_count': int(metrology.counter(engine_name, 'error')),
+            'error_timeout_count': int(metrology.counter(engine_name, 'error', 'timeout')),
+            'error_requests_count': int(metrology.counter(engine_name, 'error', 'requests')),
+            'score': score,
+            'score_per_result': score_per_result
             }
 
         stat['time_total'] = stat['time_request'] + stat['time_search'] + stat['time_callback']
@@ -664,7 +691,7 @@ def get_engines_stats():
 
         if search_count or stat['error_count'] > 0:
             stats.append(stat)
-    
+
     # time
     stats_time = sorted(stats, key=itemgetter('time_total'), reverse=True)
     stats_time_detail = {}
@@ -676,20 +703,17 @@ def get_engines_stats():
     for stat in stats:
         if stat['error_count'] > 0:
             stats_error.append(stat)
-    stats_error = sorted(stats_error, key=itemgetter('error_count'))
+    stats_error = sorted(stats_error, key=lambda e: int(e.get('error_count') * 100 / e.get('search_count')))
 
     # score
     stats_score = []
     max_score_per_result = 0
     for stat in stats:
         max_score_per_result = max(max_score_per_result, stat["score_per_result"])
-        stats_score.append(
-            [ stat["result_count"], stat["score_per_result"], stat["time_total"], stat["name"],
-              stat["score"]
-              ]
-            )
+        stats_score.append([stat["result_count"], stat["score_per_result"], stat["time_total"],
+                           stat["name"], stat["score"]])
 
-    stats_score = sorted(stats_score, key=lambda x : x[4], reverse=True)
+    stats_score = sorted(stats_score, key=lambda x: x[4], reverse=True)
 
     if max_score_per_result > 0:
         score_step = max_score_per_result / 400 * 20
@@ -701,11 +725,11 @@ def get_engines_stats():
         for s in stats_score:
             if s[1] >= y and s != avoid:
                 s[1] += offset
-    
+
     # buble chart : make it readable by avoiding collision between bubles
     # implementation : no merge, x is never changed, only y is adjusted
     # when a collision is found, all (x,y) above are moved to keep the order
-    # in other words, that's mean the absolute value y is meaningless, 
+    # in other words, that's mean the absolute value y is meaningless,
     # but the order is preserved.
     # collision = nearby x distance < 4 and nearby y < score_step
     # x = result count, y = score per result
@@ -714,7 +738,7 @@ def get_engines_stats():
         # safeguard : no more iteration than the (x,y) count
         maxIter = len(stats_score)
         # for each collision restart all tests, restart until nothing move
-        while restart and maxIter>0:
+        while restart and maxIter > 0:
             restart = False
             maxIter -= 1
             # for each other (x,y), test collision
@@ -733,25 +757,75 @@ def get_engines_stats():
 
     # return result
     return {
+        'title': gettext('Engine stats'),
+        'title_search_page': gettext('Search page'),
+        'ticks_search_time': [float(x+1)/10 for x in range(0, len(metrology.measure('search', 'time').quartiles))],
+        'search_time_search': {
+            'labels': {
+                'title': gettext('Search time'),
+                'xaxis': gettext('Time (sec)'),
+                'yaxis': gettext('Percentage of requests')
+                },
+            'values': metrology.measure('search', 'time', 'search').get_qp(),
+            'average': round(metrology.measure('search', 'time', 'search').get_average(), 3)
+            },
+        'search_time_render': {
+            'labels': {
+                'title': gettext('Rendering time'),
+                'xaxis': gettext('Time (sec)'),
+                'yaxis': gettext('Percentage of requests')
+                },
+            'values': metrology.measure('search', 'time', 'render').get_qp(),
+            'average': round(metrology.measure('search', 'time', 'render').get_average(), 3)
+            },
+        'search_time': {
+            'labels': {
+                'title': gettext('Total server time'),
+                'xaxis': gettext('Time (sec)'),
+                'yaxis': gettext('Percentage of requests')
+                },
+            'values': metrology.measure('search', 'time').get_qp(),
+            'average': round(metrology.measure('search', 'time').get_average(), 3)
+            },
         'time': {
+            'labels': {
+                'title': gettext('Page loads (sec)'),
+                'xaxis': gettext('Page loads (sec)'),
+                'serie_request': gettext('Preparation time (sec)'),
+                'serie_search': gettext('Request time (sec)'),
+                'serie_callback': gettext('Parsing time (sec)')
+                },
             'engine': [e.get('name') for e in stats_time],
             'request': [e.get('time_request') for e in stats_time],
             'search': [e.get('time_search') for e in stats_time],
             'callback': [e.get('time_callback') for e in stats_time],
             'total': [e.get('time_total') for e in stats_time],
-            'detail' : stats_time_detail,
-            'height' : len(stats) *1.6 + 5
+            'detail': stats_time_detail,
+            'height': len(stats) * 1.6 + 5
             },
         'error': {
+            'labels': {
+                'title': gettext('Errors'),
+                'xaxis': gettext('Error percentage'),
+                'serie_other': gettext('Other errors'),
+                'serie_requests': gettext('Requests errors'),
+                'serie_timeout': gettext('Timeout errors')
+                },
             'engine': [e.get('name') for e in stats_error],
-            'other': [e.get('error_other_count') for e in stats_error],
-            'requests': [e.get('error_requests_count') for e in stats_error],
-            'timeout': [e.get('error_timeout_count') for e in stats_error],
-            'height': len(stats_error)*1.6 + 5,
-            'ticks': range(0, max_error+1)
+            'other': [int(e.get('error_other_count') * 100 / e.get('search_count')) for e in stats_error],
+            'requests': [int(e.get('error_requests_count') * 100 / e.get('search_count')) for e in stats_error],
+            'timeout': [int(e.get('error_timeout_count') * 100 / e.get('search_count')) for e in stats_error],
+            'height': len(stats_error)*1.6 + 5
             },
-        'score' : stats_score,
-        'count' : len(stats),
+        'score': {
+            'labels': {
+                'title': gettext('Scores'),
+                'xaxis': gettext('Number of results'),
+                'yaxis': gettext('Scores per result')
+                },
+            'stat': stats_score
+        },
+        'count': len(stats)
         }
 
 
