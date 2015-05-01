@@ -27,6 +27,7 @@ import cStringIO
 import os
 import hashlib
 import requests
+import requests_connectioninfo
 
 from searx import logger
 logger = logger.getChild('webapp')
@@ -450,6 +451,12 @@ def index():
         theme=get_current_theme_name(),
         favicons=global_favicons[themes.index(get_current_theme_name())]
     )
+
+
+@app.route('/connectioninfo', methods=['GET', 'POST'])
+def connectioninfo():
+    return Response(requests_connectioninfo.get_json_db(),
+                    mimetype='application/json')
 
 
 @app.route('/about', methods=['GET'])
