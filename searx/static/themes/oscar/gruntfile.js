@@ -45,18 +45,15 @@ module.exports = function(grunt) {
         production: {
             options: {
                 paths: ["less/pointhi", "less/logicodev"],
+		plugins: [
+		    new (require('less-plugin-autoprefix'))({browsers: ["last 2 versions"]}),
+		    new (require('less-plugin-clean-css'))("")
+		],
                 //banner: '/*! less/oscar/oscar.css | <%= grunt.template.today("dd-mm-yyyy") %> | https://github.com/asciimoo/searx */\n',
-                cleancss: true
+                // cleancss: true
             },
             files: {"css/pointhi.min.css": "less/pointhi/oscar.less",
                     "css/logicodev.min.css": "less/logicodev/oscar.less"}
-        },
-        bootstrap: {
-            options: {
-                paths: ["less/bootstrap"],
-                cleancss: true
-            },
-            files: {"css/bootstrap.min.css": "less/bootstrap/bootstrap.less"}
         },
     },
     watch: {
