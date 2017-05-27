@@ -1,6 +1,7 @@
 certifi==2017.1.23
 flask==0.12
 flask-babel==0.11.1
+flask-rev==0.1.2
 lxml==3.7.3
 idna==2.5
 pygments==2.1.3

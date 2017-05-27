@@ -50,6 +50,7 @@ from flask import (
 )
 from flask_babel import Babel, gettext, format_date, format_decimal
 from flask.json import jsonify
+from flask_rev import Rev
 from searx import settings, searx_dir, searx_debug
 from searx.exceptions import SearxParameterException
 from searx.engines import (
@@ -877,6 +878,8 @@ class ReverseProxyPathFix(object):
             environ['wsgi.url_scheme'] = scheme
         return self.app(environ, start_response)
 
+if not searx_debug and not app.config.get('TESTING', False):
+    Rev(app)
 
 application = app
 # patch app to handle non root url-s behind proxy & wsgi
