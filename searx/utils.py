@@ -9,6 +9,7 @@ import json
 import asyncio
 import concurrent.futures
 from lxml import html, etree
+from lxml.etree import XPath
 from babel.core import get_global
 from babel.dates import format_date
 from codecs import getincrementalencoder
@@ -37,6 +38,7 @@ ecma_unescape2_re = re.compile(r'%([0-9a-fA-F]{2})', re.UNICODE)
 useragents = json.loads(open(os.path.dirname(os.path.realpath(__file__))
                              + "/data/useragents.json", 'r', encoding='utf-8').read())
 
+xpath_cache = dict()
 lang_to_lc_cache = dict()
 xpath_cache = {}
 
@@ -427,7 +429,7 @@ async def html_fromstring(content, *args):
 
 def get_xpath(xpath_str):
     result = xpath_cache.get(xpath_str, None)
-    if not result:
+    if result is None:
         result = etree.XPath(xpath_str)
         xpath_cache[xpath_str] = result
     return result

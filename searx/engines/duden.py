@@ -13,7 +13,7 @@ import re
 from urllib.parse import quote, urljoin
 from searx.engines.xpath import extract_text
 from searx import logger
-from searx.utils import html_fromstring
+from searx.utils import html_fromstring, eval_xpath
 
 categories = ['general']
 paging = True
@@ -53,7 +53,7 @@ async def response(resp):
     dom = await html_fromstring(resp.text)
 
     try:
-        number_of_results_string = re.sub('[^0-9]', '', dom.xpath(
+        number_of_results_string = re.sub('[^0-9]', '', eval_xpath(dom,
             '//a[@class="active" and contains(@href,"/suchen/dudenonline")]/span/text()')[0]
         )
 
@@ -63,12 +63,12 @@ async def response(resp):
         logger.debug("Couldn't read number of results.")
         pass
 
-    for result in dom.xpath('//section[not(contains(@class, "essay"))]'):
+    for result in eval_xpath(dom, '//section[not(contains(@class, "essay"))]'):
         try:
-            url = result.xpath('.//h2/a')[0].get('href')
+            url = eval_xpath(result, './/h2/a')[0].get('href')
             url = urljoin(base_url, url)
-            title = result.xpath('string(.//h2/a)').strip()
-            content = extract_text(result.xpath('.//p'))
+            title = eval_xpath(result, 'string(.//h2/a)').strip()
+            content = extract_text(eval_xpath(result, './/p'))
             # append result
             results.append({'url': url,
                             'title': title,
