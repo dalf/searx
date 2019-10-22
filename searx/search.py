@@ -17,7 +17,6 @@ along with searx. If not, see < http://www.gnu.org/licenses/ >.
 
 import gc
 import sys
-import threading
 import asyncio
 from _thread import start_new_thread
 from time import time
@@ -113,9 +112,8 @@ async def search_one_offline_request_safe(engine_name, query, request_params, re
 
             engine_time = time() - start_time
             result_container.add_timing(engine_name, engine_time, engine_time)
-            with threading.RLock():
-                engine.stats['engine_time'] += engine_time
-                engine.stats['engine_time_count'] += 1
+            engine.stats['engine_time'] += engine_time
+            engine.stats['engine_time_count'] += 1
 
     except ValueError as e:
         record_offline_engine_stats_on_error(engine, result_container, start_time)
@@ -133,9 +131,7 @@ async def search_one_offline_request_safe(engine_name, query, request_params, re
 def record_offline_engine_stats_on_error(engine, result_container, start_time):
     engine_time = time() - start_time
     result_container.add_timing(engine.name, engine_time, engine_time)
-
-    with threading.RLock():
-        engine.stats['errors'] += 1
+    engine.stats['errors'] += 1
 
 
 async def search_one_http_request_safe(engine_name, query, request_params, result_container, start_time, timeout_limit):
@@ -161,12 +157,12 @@ async def search_one_http_request_safe(engine_name, query, request_params, resul
             engine_time = time() - start_time
             page_load_time = requests_lib.get_time_for_thread()
             result_container.add_timing(engine_name, engine_time, page_load_time)
-            with threading.RLock():
-                engine.stats['engine_time'] += engine_time
-                engine.stats['engine_time_count'] += 1
-                # update stats with the total HTTP time
-                engine.stats['page_load_time'] += page_load_time
-                engine.stats['page_load_count'] += 1
+            # update stats
+            engine.stats['engine_time'] += engine_time
+            engine.stats['engine_time_count'] += 1
+            # update stats with the total HTTP time
+            engine.stats['page_load_time'] += page_load_time
+            engine.stats['page_load_count'] += 1
 
     except Exception as e:
         # Timing
@@ -175,8 +171,7 @@ async def search_one_http_request_safe(engine_name, query, request_params, resul
         result_container.add_timing(engine_name, engine_time, page_load_time)
 
         # Record the errors
-        with threading.RLock():
-            engine.stats['errors'] += 1
+        engine.stats['errors'] += 1
 
         if (issubclass(e.__class__, requests_lib.Timeout)):
             result_container.add_unresponsive_engine((engine_name, gettext('timeout')))
@@ -201,17 +196,16 @@ async def search_one_http_request_safe(engine_name, query, request_params, resul
             logger.exception('engine {0} : exception : {1}'.format(engine_name, e))
 
     # suspend or not the engine if there are HTTP errors
-    with threading.RLock():
-        if requests_exception:
-            # update continuous_errors / suspend_end_time
-            engine.continuous_errors += 1
-            engine.suspend_end_time = time() + min(settings['search']['max_ban_time_on_fail'],
-                                                   engine.continuous_errors * settings['search']['ban_time_on_fail'])
-        else:
-            # no HTTP error (perhaps an engine error)
-            # anyway, reset the suspend variables
-            engine.continuous_errors = 0
-            engine.suspend_end_time = 0
+    if requests_exception:
+        # update continuous_errors / suspend_end_time
+        engine.continuous_errors += 1
+        engine.suspend_end_time = time() + min(settings['search']['max_ban_time_on_fail'],
+                                                engine.continuous_errors * settings['search']['ban_time_on_fail'])
+    else:
+        # no HTTP error (perhaps an engine error)
+        # anyway, reset the suspend variables
+        engine.continuous_errors = 0
+        engine.suspend_end_time = 0
 
 
 async def search_multiple_requests(requests, result_container, start_time, timeout_limit):

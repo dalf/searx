@@ -1,7 +1,6 @@
 import re
 from collections import defaultdict
 from operator import itemgetter
-from threading import RLock
 from urllib.parse import urlparse, unquote
 from searx.engines import engines
 
@@ -155,9 +154,8 @@ class ResultContainer(object):
                 results.remove(result)
 
         if engine_name in engines:
-            with RLock():
-                engines[engine_name].stats['search_count'] += 1
-                engines[engine_name].stats['result_count'] += len(results)
+            engines[engine_name].stats['search_count'] += 1
+            engines[engine_name].stats['result_count'] += len(results)
 
         if not results:
             return
@@ -221,8 +219,7 @@ class ResultContainer(object):
 
         # if there is no duplicate found, append result
         result['positions'] = [position]
-        with RLock():
-            self._merged_results.append(result)
+        self._merged_results.append(result)
 
     def __find_duplicated_http_result(self, result):
         result_template = result.get('template')
@@ -266,16 +263,14 @@ class ResultContainer(object):
     def __merge_result_no_url(self, result, position):
         result['engines'] = set([result['engine']])
         result['positions'] = [position]
-        with RLock():
-            self._merged_results.append(result)
+        self._merged_results.append(result)
 
     def order_results(self):
         for result in self._merged_results:
             score = result_score(result)
             result['score'] = score
-            with RLock():
-                for result_engine in result['engines']:
-                    engines[result_engine].stats['score_count'] += score
+            for result_engine in result['engines']:
+                engines[result_engine].stats['score_count'] += score
 
         results = sorted(self._merged_results, key=itemgetter('score'), reverse=True)
 
