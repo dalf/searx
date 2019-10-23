@@ -151,6 +151,8 @@ _category_names = (gettext('files'),
 
 outgoing_proxies = settings['outgoing'].get('proxies') or None
 
+locale_best_match_cache = dict()
+
 
 @app.before_serving
 async def init():
@@ -163,22 +165,31 @@ async def init():
     logging.getLogger("quart.serving").removeHandler(serving_handler)
 
 
+def accept_languages_best_match(request):
+    accept_language = request.headers.get('HTTP_ACCEPT_LANGUAGE', '')
+    best_match = locale_best_match_cache.get(accept_language, None)
+    if best_match is None:
+        # equivalent to
+        # werkzeug.http.parse_accept_header(accept_language, werkzeug.datastructures.LanguageAccept)
+        best_match = request.accept_languages.best_match(settings['locales'].keys())
+        locale_best_match_cache[accept_language] = best_match
+    return best_match
+
+
 @babel.localeselector
 def get_locale():
-    locale = request.accept_languages.best_match(settings['locales'].keys())
-
-    if request.preferences.get_value('locale') != '':
-        locale = request.preferences.get_value('locale')
+    if 'locale' in request.combinedform\
+       and request.combinedform['locale'] in settings['locales']:
+        return request.combinedform['locale']
 
     if 'locale' in request.args\
        and request.args['locale'] in settings['locales']:
-        locale = request.args['locale']
+        return request.args['locale']
 
-    if 'locale' in request.combinedform\
-       and request.combinedform['locale'] in settings['locales']:
-        locale = request.combinedform['locale']
+    if request.preferences.get_value('locale') != '':
+        return request.preferences.get_value('locale')
 
-    return locale
+    return accept_languages_best_match(request)
 
 
 # code-highlighter
