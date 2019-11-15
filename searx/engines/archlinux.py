@@ -129,7 +129,7 @@ async def response(resp):
 
     results = []
 
-    dom = html_fromstring(resp.text)
+    dom = html_fromstring(await resp.text())
 
     # parse results
     for result in dom.xpath(xpath_results):

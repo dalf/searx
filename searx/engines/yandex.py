@@ -47,7 +47,7 @@ async def request(query, params):
 
 # get response from search-request
 async def response(resp):
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     results = []
 
     for result in dom.xpath(results_xpath):

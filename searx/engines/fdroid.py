@@ -33,7 +33,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     for app in dom.xpath('//a[@class="package-header"]'):
         app_url = app.xpath('./@href')[0]

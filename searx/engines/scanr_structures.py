@@ -43,7 +43,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_res = loads(resp.text)
+    search_res = loads(await resp.text())
 
     # return empty array if there are no results
     if search_res.get('total', 0) < 1:

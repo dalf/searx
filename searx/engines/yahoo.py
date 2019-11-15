@@ -105,7 +105,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     try:
         results_num = int(eval_xpath(dom, '//div[@class="compPagination"]/span[last()]/text()')[0]
@@ -144,9 +144,9 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = []
-    dom = html.fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     options = eval_xpath(dom, '//div[@id="yschlang"]/span/label/input')
     for option in options:
         code_parts = eval_xpath(option, './@value')[0][5:].split('_')

@@ -11,9 +11,8 @@
 """
 
 from json import loads
-from lxml.html import fromstring
 from urllib.parse import quote, urlencode
-from searx.utils import match_language
+from searx.utils import match_language, html_fromstring
 
 # search-url
 base_url = 'https://{language}.wikipedia.org/'
@@ -75,7 +74,7 @@ def extract_first_paragraph(content, title, image):
 async def response(resp):
     results = []
 
-    search_result = loads(resp.text)
+    search_result = loads(await resp.text())
 
     # wikipedia article's unique id
     # first valid id is assumed to be the requested article
@@ -113,9 +112,9 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = {}
-    dom = fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     tables = dom.xpath('//table[contains(@class,"sortable")]')
     for table in tables:
         # exclude header row

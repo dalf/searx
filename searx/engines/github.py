@@ -35,7 +35,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_res = loads(resp.text)
+    search_res = loads(await resp.text())
 
     # check if items are recieved
     if 'items' not in search_res:

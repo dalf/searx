@@ -47,7 +47,7 @@ async def get_client_id():
     response = await http_get("https://soundcloud.com")
 
     if response.ok:
-        tree = await html_fromstring(response.content)
+        tree = await html_fromstring(await response.read())
         script_tags = tree.xpath("//script[contains(@src, '/assets/app')]")
         app_js_urls = [script_tag.get('src') for script_tag in script_tags if script_tag is not None]
 
@@ -57,7 +57,7 @@ async def get_client_id():
             # FIXME: // search
             response = await http_get(app_js_url)
             if response.ok:
-                cids = cid_re.search(response.content.decode("utf-8"))
+                cids = cid_re.search(await response.text())
                 if cids is not None and len(cids.groups()):
                     return cids.groups()[0]
     logger.warning("Unable to fetch guest client_id from SoundCloud, check parser!")
@@ -85,7 +85,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_res = loads(resp.text)
+    search_res = loads(await resp.text())
 
     # parse results
     for result in search_res.get('collection', []):

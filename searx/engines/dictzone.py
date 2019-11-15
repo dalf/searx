@@ -44,7 +44,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     for k, result in enumerate(eval_xpath(dom, results_xpath)[1:]):
         try:

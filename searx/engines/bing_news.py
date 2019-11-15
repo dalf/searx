@@ -86,7 +86,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    rss = etree.fromstring(resp.content)
+    rss = etree.fromstring(await resp.read())
 
     ns = rss.nsmap
 

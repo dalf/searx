@@ -38,7 +38,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_res = loads(resp.text)
+    search_res = loads(await resp.text())
 
     # parse results
     for result in search_res.get('tracks', {}).get('items', {}):

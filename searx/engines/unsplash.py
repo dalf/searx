@@ -39,7 +39,7 @@ async def request(query, params):
 
 async def response(resp):
     results = []
-    json_data = loads(resp.text)
+    json_data = loads(await resp.text())
 
     if 'results' in json_data:
         for result in json_data['results']:

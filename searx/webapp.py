@@ -805,19 +805,18 @@ async def image_proxy():
     try:
         resp = await requests.get(url,
                                   timeout=settings['outgoing']['request_timeout'],
-                                  stream=True,
                                   headers=headers)
     except Exception as e:
         logger.exception(e)
         return '', 502  # Bad gateway - file is too big (>5M)
 
-    if resp.status_code == 304:
-        return '', resp.status_code
+    if resp.status == 304:
+        return '', resp.status
 
-    if resp.status_code != 200:
+    if resp.status != 200:
         logger.debug('image-proxy: wrong response code: {0}'.format(resp.status_code))
-        if resp.status_code >= 400:
-            return '', resp.status_code
+        if resp.status >= 400:
+            return '', resp.status
         return '', 400
 
     if not resp.headers.get('content-type', '').startswith('image/'):
@@ -828,9 +827,9 @@ async def image_proxy():
 
     async def stream_content(resp):
         size = 0
-        async for chunk in resp.stream():
+        async for chunk, _ in resp.content.iter_chunks():
             size = size + len(chunk)
-            if len(chunk) < 5 * 1024 * 1024:
+            if  size < 5 * 1024 * 1024:
                 yield chunk
             else:
                 resp.close()
@@ -952,4 +951,15 @@ def run():
 application = app
 
 if __name__ == "__main__":
+    if True:
+        import yappi
+        import atexit
+        yappi.set_clock_type("cpu")
+        yappi.start(builtins=True)
+        @atexit.register
+        def stop_yappi():
+            yappi.stop()
+            pr = yappi.convert2pstats(yappi.get_func_stats())
+            pr.dump_stats('quart.prof')
+
     run()

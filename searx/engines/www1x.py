@@ -35,7 +35,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = html_fromstring(resp.text)
+    dom = html_fromstring(await resp.text())
     for res in dom.xpath('//div[@class="List-item MainListing"]'):
         # processed start and end of link
         link = res.xpath('//a')[0]

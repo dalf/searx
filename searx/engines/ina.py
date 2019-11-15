@@ -50,7 +50,7 @@ async def response(resp):
     results = []
 
     # we get html in a JSON container...
-    response = loads(resp.text)
+    response = loads(await resp.text())
     if "content" not in response:
         return []
     dom = await html_fromstring(response["content"])

@@ -53,7 +53,7 @@ async def response(resp):
     if resp.status_code == 302:
         return []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     # parse results
     for row in dom.xpath('//div[contains(@data-hook, "content_row")]'):

@@ -32,7 +32,7 @@ async def request(query, params):
 # get response from search-request
 async def response(resp):
     results = []
-    json = loads(resp.text)
+    json = loads(await resp.text())
 
     # parse results
     for r in json:

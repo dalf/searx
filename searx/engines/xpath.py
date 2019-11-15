@@ -103,7 +103,7 @@ async def request(query, params):
 
 async def response(resp):
     results = []
-    dom = html.fromstring(resp.text)
+    dom = html.fromstring(await resp.text())
     if results_xpath:
         for result in eval_xpath(dom, results_xpath):
             url = extract_url(eval_xpath(result, url_xpath), search_url)

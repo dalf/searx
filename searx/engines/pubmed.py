@@ -48,7 +48,7 @@ async def response(resp):
     pubmed_retrieve_api_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?'\
                               + 'db=pubmed&retmode=xml&id={pmids_string}'
 
-    pmids_results = etree.XML(resp.content)
+    pmids_results = etree.XML(await resp.read())
     pmids = pmids_results.xpath('//eSearchResult/IdList/Id')
     pmids_string = ''
 

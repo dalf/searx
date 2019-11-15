@@ -70,7 +70,7 @@ async def response(resp):
 
     results = []
 
-    search_res = loads(resp.text)
+    search_res = loads(await resp.text())
 
     # return empty array if there are no results
     if not search_res.get('results', {}):

@@ -79,6 +79,6 @@ async def request(query, params):
 
 async def response(resp):
     parser = FilecropResultParser()
-    parser.feed(resp.text)
+    parser.feed(await resp.text())
 
     return parser.results

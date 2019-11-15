@@ -37,7 +37,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     search_res = dom.xpath('//div[@class="one_result"]')
 

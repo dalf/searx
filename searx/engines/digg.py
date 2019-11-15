@@ -49,7 +49,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_result = loads(resp.text)
+    search_result = loads(await resp.text())
 
     # parse results
     for result in search_result['mapped']:

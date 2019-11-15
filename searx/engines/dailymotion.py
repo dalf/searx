@@ -12,7 +12,6 @@
  @todo        set content-parameter with correct data
 """
 
-from json import loads
 from datetime import datetime
 from urllib.parse import urlencode
 from searx.utils import match_language, html_to_text
@@ -49,7 +48,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_res = loads(resp.text)
+    search_res = await resp.json()
 
     # return empty array if there are no results
     if 'list' not in search_res:
@@ -80,10 +79,10 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = {}
 
-    response_json = loads(resp.text)
+    response_json = await resp.json()
 
     for language in response_json['list']:
         supported_languages[language['code']] = {}

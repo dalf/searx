@@ -75,9 +75,9 @@ def parse_album(hit):
 parse = {'lyric': parse_lyric, 'song': parse_lyric, 'artist': parse_artist, 'album': parse_album}
 
 
-def response(resp):
+async def response(resp):
     results = []
-    json = loads(resp.text)
+    json = await resp.json()
     hits = [hit for section in json['response']['sections'] for hit in section['hits']]
     for hit in hits:
         try:

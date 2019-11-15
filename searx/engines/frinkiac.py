@@ -28,7 +28,7 @@ async def request(query, params):
 
 async def response(resp):
     results = []
-    response_data = loads(resp.text)
+    response_data = loads(await resp.text())
     for result in response_data:
         episode = result['Episode']
         timestamp = result['Timestamp']

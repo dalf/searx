@@ -39,7 +39,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     # parse results
     for result in dom.xpath('.//div[@id="content"]/div[@class="listWidget"]/div[@class="appRow"]'):

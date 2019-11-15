@@ -44,7 +44,7 @@ async def request(query, params):
 # get response from search-request
 async def response(resp):
 
-    response_json = loads(resp.text)
+    response_json = loads(await resp.text())
     results = response_json['results']
 
     for i in ('answers', 'infoboxes'):

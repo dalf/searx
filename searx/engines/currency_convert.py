@@ -59,7 +59,8 @@ async def request(query, params):
 
 async def response(resp):
     """remove first and last lines to get only json"""
-    json_resp = resp.text[resp.text.find('\n') + 1:resp.text.rfind('\n') - 2]
+    text = await resp.text()
+    json_resp = text[text.find('\n') + 1:text.rfind('\n') - 2]
     results = []
     try:
         conversion_rate = float(json.loads(json_resp)['conversion']['converted-amount'])

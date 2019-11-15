@@ -10,7 +10,6 @@
  @parse         url, title, content, img_src
 """
 
-from json import loads
 from flask_babel import gettext
 
 categories = ['science']
@@ -70,10 +69,10 @@ async def construct_body(result):
     return [title, content, img_src]
 
 
-def response(resp):
+async def response(resp):
 
     results = []
-    json = loads(resp.text)['response']['docs']
+    json = await resp.json()['response']['docs']
 
     # parse results
     for result in json:

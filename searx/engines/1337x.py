@@ -18,7 +18,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     for result in dom.xpath('//table[contains(@class, "table-list")]/tbody//tr'):
         href = urljoin(url, result.xpath('./td[contains(@class, "name")]/a[2]/@href')[0])

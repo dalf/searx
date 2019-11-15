@@ -50,7 +50,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    results_data = resp.text[resp.text.find('ytInitialData'):]
+    results_data = await resp.text()[await resp.text().find('ytInitialData'):]
     results_data = results_data[results_data.find('{'):results_data.find(';\n')]
 
     results_json = loads(results_data) if results_data else {}

@@ -40,9 +40,9 @@ async def request(query, params):
 # get response from search-request
 async def response(resp):
     results = []
-    data_start_pos = resp.text.find('{"filtered"')
-    data_end_pos = resp.text.find(';\n', data_start_pos + 1)
-    data = loads(resp.text[data_start_pos:data_end_pos])
+    data_start_pos = await resp.text().find('{"filtered"')
+    data_end_pos = await resp.text().find(';\n', data_start_pos + 1)
+    data = loads(await resp.text()[data_start_pos:data_end_pos])
 
     # parse results
     for result in data['filtered']['data']:

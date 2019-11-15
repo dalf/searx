@@ -62,7 +62,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    raw_search_results = loads(resp.text)
+    raw_search_results = loads(await resp.text())
 
     # return empty array if there are no results
     if not raw_search_results:

@@ -63,7 +63,7 @@ async def response(resp):
     results = []
     result_len = 0
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     # parse results
     for result in eval_xpath(dom, '//div[@class="sa_cc"]'):
         link = eval_xpath(result, './/h3/a')[0]
@@ -110,9 +110,9 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = []
-    dom = html.fromstring(resp.text)
+    dom = html.fromstring(await resp.text())
     options = eval_xpath(dom, '//div[@id="limit-languages"]//input')
     for option in options:
         code = eval_xpath(option, './@id')[0].replace('_', '-')

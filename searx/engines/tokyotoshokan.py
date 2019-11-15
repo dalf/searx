@@ -36,7 +36,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     rows = dom.xpath('//table[@class="listing"]//tr[contains(@class, "category_0")]')
 
     # check if there are no results or page layout was changed so we cannot parse it

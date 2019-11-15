@@ -65,7 +65,7 @@ def replace_pua_chars(text):
 async def response(resp):
     results = []
 
-    search_results = etree.XML(resp.content)
+    search_results = etree.XML(await resp.read())
 
     # return empty array if there are no results
     if search_results.xpath(failure_xpath):

@@ -31,7 +31,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_res = json.loads(resp.text)
+    search_res = json.loads(await resp.text())
 
     content = ''
     heading = search_res.get('Heading', '')

@@ -1,7 +1,7 @@
 import re
 from collections import defaultdict
 from operator import itemgetter
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse as urlparse_vanilla, ParseResult
 from searx.engines import engines
 
 
@@ -17,31 +17,37 @@ def result_content_len(content):
         return 0
 
 
-def compare_urls(url_a, url_b):
-    # ignore www. in comparison
-    if url_a.netloc.startswith('www.'):
-        # should be url_a.host (compatible with Python 2 ?)
-        host_a = url_a.netloc.replace('www.', '', 1)
-    else:
-        host_a = url_a.netloc
-    if url_b.netloc.startswith('www.'):
-        # should be url_b.host (compatible with Python 2 ?)
-        host_b = url_b.netloc.replace('www.', '', 1)
-    else:
-        host_b = url_b.netloc
+cache = {}
 
-    if host_a != host_b or url_a.query != url_b.query or url_a.fragment != url_b.fragment:
-        return False
+def urlparse(url):
+    global cache
+    parseresult = cache.get(url, None)
+    if parseresult is None:
+        parseresult = urlparse_vanilla(url)
+        cache[url] = parseresult
+    return parseresult
+
+
+def parsedurl_to_id(url):
+    if url.netloc.startswith('www.'):
+        # should be url_a.hostname (compatible with Python 2 ?)
+        host = url.netloc.replace('www.', '', 1)
+    else:
+        host = url.netloc
 
     # remove / from the end of the url if required
-    path_a = url_a.path[:-1]\
-        if url_a.path.endswith('/')\
-        else url_a.path
-    path_b = url_b.path[:-1]\
-        if url_b.path.endswith('/')\
-        else url_b.path
+    path = url.path[:-1]\
+        if url.path.endswith('/')\
+        else url.path
+    path = unquote(path)
 
-    return unquote(path_a) == unquote(path_b)
+    return host + '/' + path + '?' + url.query + '#' + url.fragment
+
+
+def url_to_id(url):
+    if url == '' or url is None:
+        return ''
+    return parsedurl_to_id(urlparse(url))
 
 
 def merge_two_infoboxes(infobox1, infobox2):
@@ -65,9 +71,9 @@ def merge_two_infoboxes(infobox1, infobox2):
 
         for url2 in infobox2.get('urls', []):
             unique_url = True
-            parsed_url2 = urlparse(url2.get('url', ''))
+            id_url2 = url_to_id(url2.get('url', ''))
             for url1 in urls1:
-                if compare_urls(urlparse(url1.get('url', '')), parsed_url2):
+                if id_url2 == url_to_id(url1.get('url', '')):
                     unique_url = False
                     break
             if unique_url:
@@ -123,19 +129,24 @@ def result_score(result):
 class ResultContainer(object):
     """docstring for ResultContainer"""
 
+    __slots__ = ('results', 'infoboxes', 'suggestions', 'answers', 'corrections', 'paging',
+                 'unresponsive_engines', 'timings', '_merged_results', '_merged_results_dict',
+                 '_number_of_results', '_ordered')
+
     def __init__(self):
         super(ResultContainer, self).__init__()
         self.results = defaultdict(list)
-        self._merged_results = []
         self.infoboxes = []
         self.suggestions = set()
         self.answers = set()
         self.corrections = set()
-        self._number_of_results = []
-        self._ordered = False
         self.paging = False
         self.unresponsive_engines = set()
         self.timings = []
+        self._merged_results = []
+        self._merged_results_dict = dict()
+        self._number_of_results = []
+        self._ordered = False
 
     def extend(self, engine_name, results):
         for result in list(results):
@@ -186,9 +197,9 @@ class ResultContainer(object):
         add_infobox = True
         infobox_id = infobox.get('id', None)
         if infobox_id is not None:
-            parsed_url_infobox_id = urlparse(infobox_id)
+            id_infobox_id = url_to_id(infobox_id)
             for existingIndex in self.infoboxes:
-                if compare_urls(urlparse(existingIndex.get('id', '')), parsed_url_infobox_id):
+                if id_infobox_id == url_to_id(existingIndex.get('id', '')):
                     merge_two_infoboxes(existingIndex, infobox)
                     add_infobox = False
 
@@ -216,31 +227,27 @@ class ResultContainer(object):
         if result.get('content'):
             result['content'] = WHITESPACE_REGEX.sub(' ', result['content'])
 
-        duplicated = self.__find_duplicated_http_result(result)
-        if duplicated:
+        #
+        id = self.__get_url_result_id(result)
+        duplicated = self._merged_results_dict.get(id, None)
+        if duplicated is not None:
+            # merge with the duplicate result
             self.__merge_duplicated_http_result(duplicated, result, position)
-            return
+        else:
+            # if there is no duplicate found, append result
+            result['positions'] = [position]
+            self._merged_results_dict[id] = result
+            self._merged_results.append(result)
 
-        # if there is no duplicate found, append result
-        result['positions'] = [position]
-        self._merged_results.append(result)
+    def __get_url_result_id(self, result):
+        url = parsedurl_to_id(result['parsed_url'])
+        template = result.get('template', '')
+        if template == 'images.html':
+            img_src = result.get('img_src', '')
+        else:
+            img_src = ''
+        return template + chr(10) + url + chr(10) + img_src
 
-    def __find_duplicated_http_result(self, result):
-        result_template = result.get('template')
-        for merged_result in self._merged_results:
-            if 'parsed_url' not in merged_result:
-                continue
-            if compare_urls(result['parsed_url'], merged_result['parsed_url'])\
-               and result_template == merged_result.get('template'):
-                if result_template != 'images.html':
-                    # not an image, same template, same url : it's a duplicate
-                    return merged_result
-                else:
-                    # it's an image
-                    # it's a duplicate if the parsed_url, template and img_src are differents
-                    if result.get('img_src', '') == merged_result.get('img_src', ''):
-                        return merged_result
-        return None
 
     def __merge_duplicated_http_result(self, duplicated, result, position):
         # using content with more text
@@ -324,6 +331,8 @@ class ResultContainer(object):
         # update _merged_results
         self._ordered = True
         self._merged_results = gresults
+        self._merged_results_dict.clear()
+
 
     def get_ordered_results(self):
         if not self._ordered:

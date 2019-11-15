@@ -73,7 +73,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     # parse results
     for result in dom.xpath('//div[@class="imgpt"]'):
@@ -105,9 +105,9 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = []
-    dom = html.fromstring(resp.text)
+    dom = html_fromstring(await resp.text())
 
     regions_xpath = '//div[@id="region-section-content"]' \
                     + '//ul[@class="b_vList"]/li/a/@href'

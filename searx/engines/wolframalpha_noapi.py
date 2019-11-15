@@ -74,7 +74,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    resp_json = loads(resp.text)
+    resp_json = loads(await resp.text())
 
     if not resp_json['queryresult']['success']:
         return []

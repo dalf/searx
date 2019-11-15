@@ -39,7 +39,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     for result in dom.xpath('//div[@class="results"]/dl'):
         name_cell = result.xpath('./dt')[0]

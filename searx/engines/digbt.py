@@ -31,7 +31,7 @@ async def request(query, params):
 
 
 async def response(resp):
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     search_res = dom.xpath('.//td[@class="x-item"]')
 
     if not search_res:

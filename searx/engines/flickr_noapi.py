@@ -57,7 +57,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    matches = modelexport_re.search(resp.text)
+    matches = modelexport_re.search(await resp.text())
 
     if matches is None:
         return results

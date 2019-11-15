@@ -75,7 +75,7 @@ async def request(query, params):
 
 async def response(resp):
     results = []
-    html = await html_fromstring(resp.content.decode("utf-8"))
+    html = await html_fromstring(await resp.read().decode("utf-8"))
     search_results = eval_xpath(html, wikidata_ids_xpath)
 
     if resp.search_params['language'].split('-')[0] == 'all':

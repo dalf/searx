@@ -73,7 +73,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_results = etree.XML(resp.content)
+    search_results = etree.XML(await resp.read())
 
     for entry in search_results.xpath('./result/doc'):
         content = "No description available"

@@ -36,7 +36,7 @@ async def response(resp):
     img_results = []
     text_results = []
 
-    search_results = json.loads(resp.text)
+    search_results = json.loads(await resp.text())
 
     # return empty array if there are no results
     if 'data' not in search_results:

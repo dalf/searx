@@ -41,7 +41,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    doc = await html_fromstring(resp.text)
+    doc = await html_fromstring(await resp.text())
 
     # parse results
     # Quickhits

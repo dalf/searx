@@ -50,7 +50,7 @@ async def response(resp):
     '''
     results = []
 
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     try:
         number_of_results_string = re.sub('[^0-9]', '', eval_xpath(dom,

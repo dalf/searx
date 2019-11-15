@@ -56,7 +56,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    search_results = loads(resp.text)
+    search_results = loads(await resp.text())
 
     # return empty array if there are no results
     if 'data' not in search_results:
@@ -114,9 +114,9 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     # list of regions is embedded in page as a js object
-    response_text = resp.text
+    response_text = await resp.text()
     response_text = response_text[response_text.find('regionalisation'):]
     response_text = response_text[response_text.find('{'):response_text.find(');')]
 

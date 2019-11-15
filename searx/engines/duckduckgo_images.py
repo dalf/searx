@@ -73,7 +73,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    content = resp.text
+    content = await resp.text()
     try:
         res_json = loads(content)
     except:

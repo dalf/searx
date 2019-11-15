@@ -14,8 +14,7 @@ import random
 from json import loads
 from time import time
 from urllib.parse import urlencode
-from lxml.html import fromstring
-from searx.utils import eval_xpath
+from searx.utils import eval_xpath, html_fromstring
 
 # engine dependent config
 categories = ['general']
@@ -84,7 +83,7 @@ async def response(resp):
     results = []
 
     # parse results
-    response_json = loads(resp.text)
+    response_json = loads(await resp.text())
 
     for result in response_json['results']:
         # append result
@@ -97,9 +96,9 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = []
-    dom = fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     links = eval_xpath(dom, '//span[@id="menu2"]/a')
     for link in links:
         href = eval_xpath(link, './@href')[0].split('lang%3A')

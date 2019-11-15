@@ -103,7 +103,7 @@ async def request(query, params):
 async def response(resp):
     results = []
 
-    doc = await html_fromstring(resp.text)
+    doc = await html_fromstring(await resp.text())
 
     # parse results
     for i, r in enumerate(eval_xpath(doc, result_xpath)):
@@ -130,10 +130,10 @@ async def response(resp):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
 
     # response is a js file with regions as an embedded object
-    response_page = resp.text
+    response_page = await resp.text()
     response_page = response_page[response_page.find('regions:{') + 8:]
     response_page = response_page[:response_page.find('}') + 1]
 

@@ -223,7 +223,7 @@ async def response(resp):
     google_url = "https://" + google_hostname
 
     # convert the text to dom
-    dom = await html_fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
 
     instant_answer = eval_xpath(dom, '//div[@id="_vBb"]//text()')
     if instant_answer:
@@ -384,9 +384,9 @@ def attributes_to_html(attributes):
 
 
 # get supported languages from their site
-def _fetch_supported_languages(resp):
+async def _fetch_supported_languages(resp):
     supported_languages = {}
-    dom = html.fromstring(resp.text)
+    dom = await html_fromstring(await resp.text())
     options = eval_xpath(dom, '//*[@id="langSec"]//input[@name="lr"]')
     for option in options:
         code = eval_xpath(option, './@value')[0].split('_')[-1]
