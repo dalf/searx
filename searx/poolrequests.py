@@ -55,7 +55,7 @@ async def send_request(method, url, kwargs):
     if 'stream' in kwargs:
         del kwargs['stream']
         raise NotImplementedError('stream not supported')
-    
+
     response = await client.request(method.upper(), url, **kwargs)
 
     # requests compatibility
