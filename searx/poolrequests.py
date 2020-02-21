@@ -1,8 +1,7 @@
 from time import time
 import threading
-from threading import local
-import asyncio
 import concurrent.futures
+import asyncio
 import logging
 
 import uvloop
@@ -10,9 +9,9 @@ import httpx
 from searx import settings
 
 
-threadLocal = local()
-connect = settings['outgoing'].get('pool_connections', 100)  # Magic number kept from previous code
-maxsize = settings['outgoing'].get('pool_maxsize', 10)  # Picked from constructor
+threadLocal = threading.local()
+pool_connections = settings['outgoing'].get('pool_connections', 100)  # Magic number kept from previous code
+pool_maxsize = settings['outgoing'].get('pool_maxsize', 10)  # Picked from constructor
 
 
 def set_timeout_for_thread(timeout, start_time=None):
@@ -33,10 +32,10 @@ clients = dict()
 
 
 async def get_client(verify, proxies):
-    global clients, connect, maxsize
+    global clients, pool_connections, pool_maxsize
     key = str(verify) + '|' + str(proxies)
     if key not in clients:
-        user_pool_limits = httpx.PoolLimits(soft_limit=maxsize, hard_limit=connect)
+        user_pool_limits = httpx.PoolLimits(soft_limit=pool_maxsize, hard_limit=pool_connections)
         client = httpx.AsyncClient(http2=True, pool_limits=user_pool_limits, verify=verify, proxies=proxies)
         clients[key] = client
     else:
@@ -44,26 +43,29 @@ async def get_client(verify, proxies):
     return client
 
 
-async def send_request(future, method, url, **kwargs):
-    global clients
+async def send_request(method, url, kwargs):
+    if isinstance(url, bytes):
+        url = url.decode('utf-8')
+
+    client = await get_client(kwargs.get('verify', True), kwargs.get('proxies', None))
+    if 'verify' in kwargs:
+        del kwargs['verify']
+    if 'proxies' in kwargs:
+        del kwargs['proxies']
+    if 'stream' in kwargs:
+        del kwargs['stream']
+        raise NotImplementedError('stream not supported')
+    
+    response = await client.request(method.upper(), url, **kwargs)
+
+    # requests compatibility
     try:
-        client = await get_client(kwargs.get('verify', True), kwargs.get('proxies', None))
-        if 'verify' in kwargs:
-            del kwargs['verify']
-        if 'proxies' in kwargs:
-            del kwargs['proxies']
-        r = await client.request(method.upper(), url, **kwargs)
+        response.raise_for_status()
+        response.ok = True
+    except httpx.HTTPError:
+        response.ok = False
 
-        # requests compatibility
-        try:
-            r.raise_for_status()
-            r.ok = True
-        except httpx.HTTPError:
-            r.ok = False
-
-        future.set_result(r)
-    except Exception as e:
-        future.set_exception(e)
+    return response
 
 
 def request(method, url, **kwargs):
@@ -84,9 +86,7 @@ def request(method, url, **kwargs):
             kwargs['timeout'] = timeout
 
     # do request
-    future = concurrent.futures.Future()
-    send_request_task = asyncio.ensure_future(send_request(future, method, url, **kwargs), loop=loop)
-    loop.call_soon_threadsafe(send_request_task)
+    future = asyncio.run_coroutine_threadsafe(send_request(method, url, kwargs), loop)
     response = future.result()
 
     time_after_request = time()
@@ -143,6 +143,8 @@ def init():
                         'httpx.dispatch.connection_pool', 'httpx.dispatch.connection',
                         'httpx.dispatch.http2', 'httpx.dispatch.http11'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    #
 
     # loop
     def loop_thread():

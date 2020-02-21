@@ -858,7 +858,6 @@ def image_proxy():
     headers['User-Agent'] = gen_useragent()
 
     resp = searx.poolrequests.get(url,
-                                  stream=True,
                                   timeout=settings['outgoing']['request_timeout'],
                                   headers=headers,
                                   proxies=outgoing_proxies)
@@ -876,18 +875,8 @@ def image_proxy():
         logger.debug('image-proxy: wrong content-type: {0}'.format(resp.headers.get('content-type')))
         return '', 400
 
-    img = b''
-    chunk_counter = 0
-
-    for chunk in resp.iter_content(1024 * 1024):
-        chunk_counter += 1
-        if chunk_counter > 5:
-            return '', 502  # Bad gateway - file is too big (>5M)
-        img += chunk
-
     headers = dict_subset(resp.headers, {'Content-Length', 'Length', 'Date', 'Last-Modified', 'Expires', 'Etag'})
-
-    return Response(img, mimetype=resp.headers['content-type'], headers=headers)
+    return Response(resp.content, mimetype=resp.headers['content-type'], headers=headers)
 
 
 @app.route('/stats', methods=['GET'])
