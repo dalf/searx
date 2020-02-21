@@ -1,77 +1,18 @@
-import requests
-
-from itertools import cycle
-from threading import RLock, local
-from searx import settings
 from time import time
+import threading
+from threading import local
+import asyncio
+import concurrent.futures
+import logging
 
-
-class HTTPAdapterWithConnParams(requests.adapters.HTTPAdapter):
-
-    def __init__(self, pool_connections=requests.adapters.DEFAULT_POOLSIZE,
-                 pool_maxsize=requests.adapters.DEFAULT_POOLSIZE,
-                 max_retries=requests.adapters.DEFAULT_RETRIES,
-                 pool_block=requests.adapters.DEFAULT_POOLBLOCK,
-                 **conn_params):
-        if max_retries == requests.adapters.DEFAULT_RETRIES:
-            self.max_retries = requests.adapters.Retry(0, read=False)
-        else:
-            self.max_retries = requests.adapters.Retry.from_int(max_retries)
-        self.config = {}
-        self.proxy_manager = {}
-
-        super(requests.adapters.HTTPAdapter, self).__init__()
-
-        self._pool_connections = pool_connections
-        self._pool_maxsize = pool_maxsize
-        self._pool_block = pool_block
-        self._conn_params = conn_params
-
-        self.init_poolmanager(pool_connections, pool_maxsize, block=pool_block, **conn_params)
-
-    def __setstate__(self, state):
-        # Can't handle by adding 'proxy_manager' to self.__attrs__ because
-        # because self.poolmanager uses a lambda function, which isn't pickleable.
-        self.proxy_manager = {}
-        self.config = {}
-
-        for attr, value in state.items():
-            setattr(self, attr, value)
-
-        self.init_poolmanager(self._pool_connections, self._pool_maxsize,
-                              block=self._pool_block, **self._conn_params)
+import uvloop
+import httpx
+from searx import settings
 
 
 threadLocal = local()
 connect = settings['outgoing'].get('pool_connections', 100)  # Magic number kept from previous code
-maxsize = settings['outgoing'].get('pool_maxsize', requests.adapters.DEFAULT_POOLSIZE)  # Picked from constructor
-if settings['outgoing'].get('source_ips'):
-    http_adapters = cycle(HTTPAdapterWithConnParams(pool_connections=connect, pool_maxsize=maxsize,
-                                                    source_address=(source_ip, 0))
-                          for source_ip in settings['outgoing']['source_ips'])
-    https_adapters = cycle(HTTPAdapterWithConnParams(pool_connections=connect, pool_maxsize=maxsize,
-                                                     source_address=(source_ip, 0))
-                           for source_ip in settings['outgoing']['source_ips'])
-else:
-    http_adapters = cycle((HTTPAdapterWithConnParams(pool_connections=connect, pool_maxsize=maxsize), ))
-    https_adapters = cycle((HTTPAdapterWithConnParams(pool_connections=connect, pool_maxsize=maxsize), ))
-
-
-class SessionSinglePool(requests.Session):
-
-    def __init__(self):
-        super(SessionSinglePool, self).__init__()
-
-        # reuse the same adapters
-        with RLock():
-            self.adapters.clear()
-            self.mount('https://', next(https_adapters))
-            self.mount('http://', next(http_adapters))
-
-    def close(self):
-        """Call super, but clear adapters since there are managed globaly"""
-        self.adapters.clear()
-        super(SessionSinglePool, self).close()
+maxsize = settings['outgoing'].get('pool_maxsize', 10)  # Picked from constructor
 
 
 def set_timeout_for_thread(timeout, start_time=None):
@@ -87,12 +28,49 @@ def get_time_for_thread():
     return threadLocal.total_time
 
 
+loop = None
+clients = dict()
+
+
+async def get_client(verify, proxies):
+    global clients, connect, maxsize
+    key = str(verify) + '|' + str(proxies)
+    if key not in clients:
+        user_pool_limits = httpx.PoolLimits(soft_limit=maxsize, hard_limit=connect)
+        client = httpx.AsyncClient(http2=True, pool_limits=user_pool_limits, verify=verify, proxies=proxies)
+        clients[key] = client
+    else:
+        client = clients[key]
+    return client
+
+
+async def send_request(future, method, url, **kwargs):
+    global clients
+    try:
+        client = await get_client(kwargs.get('verify', True), kwargs.get('proxies', None))
+        if 'verify' in kwargs:
+            del kwargs['verify']
+        if 'proxies' in kwargs:
+            del kwargs['proxies']
+        r = await client.request(method.upper(), url, **kwargs)
+        
+        # requests compatibility
+        try:
+            r.raise_for_status()
+            r.ok = True
+        except httpx.HTTPError:
+            r.ok = False
+
+        future.set_result(r)
+    except Exception as e:
+        future.set_exception(e)
+
+
 def request(method, url, **kwargs):
+    global loop
+
     """same as requests/requests/api.py request(...)"""
     time_before_request = time()
-
-    # session start
-    session = SessionSinglePool()
 
     # proxies
     kwargs['proxies'] = settings['outgoing'].get('proxies') or None
@@ -106,7 +84,10 @@ def request(method, url, **kwargs):
             kwargs['timeout'] = timeout
 
     # do request
-    response = session.request(method=method, url=url, **kwargs)
+    future = concurrent.futures.Future()
+    send_request_task = asyncio.ensure_future(send_request(future, method, url, **kwargs), loop=loop)
+    loop.call_soon_threadsafe(send_request_task)
+    response = future.result()
 
     time_after_request = time()
 
@@ -117,10 +98,7 @@ def request(method, url, **kwargs):
         start_time = getattr(threadLocal, 'start_time', time_before_request)
         search_duration = time_after_request - start_time
         if search_duration > timeout + timeout_overhead:
-            raise requests.exceptions.Timeout(response=response)
-
-    # session end
-    session.close()
+            raise httpx.exceptions.ReadTimeout(response=response)
 
     if hasattr(threadLocal, 'total_time'):
         threadLocal.total_time += time_after_request - time_before_request
@@ -157,3 +135,25 @@ def patch(url, data=None, **kwargs):
 
 def delete(url, **kwargs):
     return request('delete', url, **kwargs)
+
+
+def init():
+    # log
+    for logger_name in ('httpx.client', 'httpx.config', 'hpack.hpack', 'hpack.table',
+                        'httpx.dispatch.connection_pool', 'httpx.dispatch.connection',
+                        'httpx.dispatch.http2', 'httpx.dispatch.http11'):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+    # loop
+    def loop_thread():
+        global loop
+        loop = uvloop.new_event_loop()
+        loop.run_forever()
+
+    th = threading.Thread(
+        target=loop_thread,
+        name='asyncio_loop',
+        daemon=True,
+    )
+    th.start()
+
+init()

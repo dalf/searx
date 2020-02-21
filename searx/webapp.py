@@ -28,7 +28,7 @@ import json
 import os
 import sys
 
-import requests
+import searx.poolrequests
 
 from searx import logger
 logger = logger.getChild('webapp')
@@ -857,11 +857,11 @@ def image_proxy():
     headers = dict_subset(request.headers, {'If-Modified-Since', 'If-None-Match'})
     headers['User-Agent'] = gen_useragent()
 
-    resp = requests.get(url,
-                        stream=True,
-                        timeout=settings['outgoing']['request_timeout'],
-                        headers=headers,
-                        proxies=outgoing_proxies)
+    resp = searx.poolrequests.get(url,
+                                  stream=True,
+                                  timeout=settings['outgoing']['request_timeout'],
+                                  headers=headers,
+                                  proxies=outgoing_proxies)
 
     if resp.status_code == 304:
         return '', resp.status_code
