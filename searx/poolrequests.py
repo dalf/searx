@@ -53,7 +53,7 @@ async def send_request(future, method, url, **kwargs):
         if 'proxies' in kwargs:
             del kwargs['proxies']
         r = await client.request(method.upper(), url, **kwargs)
-        
+
         # requests compatibility
         try:
             r.raise_for_status()
@@ -143,6 +143,7 @@ def init():
                         'httpx.dispatch.connection_pool', 'httpx.dispatch.connection',
                         'httpx.dispatch.http2', 'httpx.dispatch.http11'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)
+
     # loop
     def loop_thread():
         global loop
