@@ -139,12 +139,8 @@ def delete(url, **kwargs):
 
 def init():
     # log
-    for logger_name in ('httpx.client', 'httpx.config', 'hpack.hpack', 'hpack.table',
-                        'httpx.dispatch.connection_pool', 'httpx.dispatch.connection',
-                        'httpx.dispatch.http2', 'httpx.dispatch.http11'):
+    for logger_name in ('hpack.hpack', 'hpack.table'):
         logging.getLogger(logger_name).setLevel(logging.WARNING)
-
-    #
 
     # loop
     def loop_thread():
