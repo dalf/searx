@@ -197,7 +197,15 @@ def request(query, params):
 
     params['headers']['Accept-Language'] = language + ',' + language + '-' + country
     params['headers']['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-
+    params['headers']['DNT'] = '1'
+    params['headers']['Upgrade-Insecure-Requests'] = '1'
+    params['headers']['Cache-Control'] = 'max-age=0'
+    # the TE HTTP header raises this exception
+    # httpx.exceptions.ProtocolError: <StreamReset stream_id:1, error_code:ErrorCodes.PROTOCOL_ERROR, remote_reset:True>
+    # most probably because of
+    # https://github.com/python-hyper/hyper-h2/pull/26/files#diff-19d167383ddbd75543abdbc92e6b0698R480
+    # "When trailers are received without the END_STREAM flag being present, this is a ProtocolError."
+    # params['headers']['TE'] = 'Trailers'
     params['google_hostname'] = google_hostname
 
     return params
@@ -206,6 +214,8 @@ def request(query, params):
 # get response from search-request
 def response(resp):
     results = []
+
+    print(resp.headers)
 
     # detect google sorry
     resp_url = urlparse(str(resp.url))
@@ -276,7 +286,7 @@ def response(resp):
                                 'content': content
                                 })
         except:
-            logger.debug('result parse error in:\n%s', etree.tostring(result, pretty_print=True))
+            logger.debug('result parse error')
             continue
 
     # parse suggestion
