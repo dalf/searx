@@ -30,7 +30,7 @@ PYLINT_RC ?= .pylintrc
 TEST_FOLDER  ?= ./tests
 TEST         ?= .
 
-VTENV_OPTS   = "--no-site-packages"
+# VTENV_OPTS   = "--no-site-packages"
 PY_ENV       = ./local/py$(PY)
 PY_ENV_BIN   = $(PY_ENV)/bin
 PY_ENV_ACT   = . $(PY_ENV_BIN)/activate
