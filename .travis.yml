@@ -6,6 +6,10 @@ cache:
     - $HOME/.cache/pip
 addons:
   firefox: "latest"
+env:
+  global:
+    - DOCKER_CLI_EXPERIMENTAL=enabled
+    - DOCKER_BUILDKIT=1
 
 install:
   - env
@@ -24,7 +28,7 @@ after_success:
 stages:
   - test
   - name: docker
-    if: branch = master AND type != pull_request AND env(DOCKER_USERNAME) IS present
+    if: branch = docker-buildx
 
 jobs:
   include:
@@ -42,7 +46,21 @@ jobs:
       before_install: true
       install: true
       script:
+        - mkdir -p /etc/docker/
+        - |
+          echo -e '{"experimental": true}' | sudo tee /etc/docker/daemon.json
+        - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+        - sudo add-apt-repository "deb https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        - sudo apt-get install -qy docker-ce
+        # log into Docker HUB
+        - echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin
+        # enable multiarch
+        - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        # create builder for buildx
+        - docker buildx create --use --name build --node build --driver-opt network=host
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - make -e GIT_URL=$(git remote get-url origin) docker.push
+        # build
         - make -e GIT_URL=$(git remote get-url origin) docker.push
       after_success: true
 

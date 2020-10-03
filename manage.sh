@@ -151,20 +151,20 @@ docker_build() {
 
     # build Docker image
     echo "Building image ${SEARX_IMAGE_NAME}:${SEARX_GIT_VERSION}"
-    sudo docker build \
+    docker buildx build --platform linux/amd64,linux/arm64,linux/ppc64le \
          --build-arg GIT_URL="${GIT_URL}" \
          --build-arg SEARX_GIT_VERSION="${SEARX_GIT_VERSION}" \
          --build-arg VERSION_GITCOMMIT="${VERSION_GITCOMMIT}" \
          --build-arg LABEL_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
          --build-arg LABEL_VCS_REF=$(git rev-parse HEAD) \
          --build-arg LABEL_VCS_URL="${GIT_URL}" \
-	 --build-arg TIMESTAMP_SETTINGS=$(git log -1 --format="%cd" --date=unix -- searx/settings.yml) \
-	 --build-arg TIMESTAMP_UWSGI=$(git log -1 --format="%cd" --date=unix -- dockerfiles/uwsgi.ini) \
+	     --build-arg TIMESTAMP_SETTINGS=$(git log -1 --format="%cd" --date=unix -- searx/settings.yml) \
+	     --build-arg TIMESTAMP_UWSGI=$(git log -1 --format="%cd" --date=unix -- dockerfiles/uwsgi.ini) \
          -t ${SEARX_IMAGE_NAME}:latest -t ${SEARX_IMAGE_NAME}:${SEARX_GIT_VERSION} .
 
     if [ "$1" = "push" ]; then
-	sudo docker push ${SEARX_IMAGE_NAME}:latest
-	sudo docker push ${SEARX_IMAGE_NAME}:${SEARX_GIT_VERSION}
+	    docker push ${SEARX_IMAGE_NAME}:latest
+	    docker push ${SEARX_IMAGE_NAME}:${SEARX_GIT_VERSION}
     fi
 }
 
