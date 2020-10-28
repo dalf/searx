@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>How to setup result proxy &#8212; Searx Documentation (Searx-0.17.0.tex)</title>
+    <link rel="stylesheet" href="../_static/searx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/tabs.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Engines" href="engines.html" />
+    <link rel="prev" title="How to protect an instance" href="filtron.html" />
+  <script>DOCUMENTATION_OPTIONS.URL_ROOT = '../';</script>
+   
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="engines.html" title="Engines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="filtron.html" title="How to protect an instance"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Searx Documentation (Searx-0.17.0.tex)</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Administrator documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">How to setup result proxy</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="how-to-setup-result-proxy">
+<span id="searx-morty"></span><h1>How to setup result proxy<a class="headerlink" href="#how-to-setup-result-proxy" title="Permalink to this headline">¶</a></h1>
+<div class="sidebar">
+<p class="sidebar-title">further reading</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../utils/morty.sh.html#morty-sh"><span class="std std-ref">utils/morty.sh</span></a></p></li>
+</ul>
+</div>
+<p>By default searx can only act as an image proxy for result images, but it is
+possible to proxify all the result URLs with an external service, <a class="reference external" href="https://github.com/asciimoo/morty">morty</a>.</p>
+<p>To use this feature, morty has to be installed and activated in searx’s
+<code class="docutils literal notranslate"><span class="pre">settings.yml</span></code>.</p>
+<p>Add the following snippet to your <code class="docutils literal notranslate"><span class="pre">settings.yml</span></code> and restart searx:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">result_proxy</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">url</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">http://127.0.0.1:3000/</span>
+    <span class="l l-Scalar l-Scalar-Plain">key</span> <span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">your_morty_proxy_key</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">url</span></code></dt><dd><p>Is the address of the running morty service.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">key</span></code></dt><dd><p>Is an optional argument, see <a class="reference external" href="https://github.com/asciimoo/morty">morty’s README</a> for more information.</p>
+</dd>
+</dl>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+  <span id="sidebar-top"></span>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/searx_logo_small.png" alt="Logo"/>
+            </a></p>
+  
+
+  <h3>Project Links</h3>
+  <ul>
+    <li><a href="https://github.com/searx/searx">Source</a>
+  
+    <li><a href="https://github.com/searx/searx/wiki">Wiki</a>
+  
+    <li><a href="https://searx.space/">Public instances</a>
+  
+    <li><a href="https://twitter.com/Searx_engine">Twitter</a>
+  </ul><h3>Navigation</h3>
+<ul>
+  <li><a href="../index.html">Overview</a>
+    <ul>
+      <li><a href="index.html">Administrator documentation</a>
+        <ul>
+          <li>Previous: <a href="filtron.html" title="previous chapter">How to protect an instance</a>
+          <li>Next: <a href="engines.html" title="next chapter">Engines</a></ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2020, Adam Tauber, Noémi Ványi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  <script src="../_static/version_warning_offset.js"></script>
+
+  </body>
+</html>

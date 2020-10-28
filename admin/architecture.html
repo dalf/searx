@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Architecture &#8212; Searx Documentation (Searx-0.17.0.tex)</title>
+    <link rel="stylesheet" href="../_static/searx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/tabs.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="How to protect an instance" href="filtron.html" />
+    <link rel="prev" title="Administration API" href="api.html" />
+  <script>DOCUMENTATION_OPTIONS.URL_ROOT = '../';</script>
+   
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="filtron.html" title="How to protect an instance"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="api.html" title="Administration API"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Searx Documentation (Searx-0.17.0.tex)</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Administrator documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Architecture</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="architecture">
+<span id="id1"></span><h1>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h1>
+<div class="sidebar">
+<p class="sidebar-title">Further reading</p>
+<ul class="simple">
+<li><p>Reverse Proxy: <a class="reference internal" href="installation-apache.html#apache-searx-site"><span class="std std-ref">Apache</span></a> &amp; <a class="reference internal" href="installation-nginx.html#nginx-searx-site"><span class="std std-ref">nginx</span></a></p></li>
+<li><p>Filtron: <a class="reference internal" href="filtron.html#searx-filtron"><span class="std std-ref">How to protect an instance</span></a></p></li>
+<li><p>Morty: <a class="reference internal" href="morty.html#searx-morty"><span class="std std-ref">How to setup result proxy</span></a></p></li>
+<li><p>uWSGI: <a class="reference internal" href="installation-uwsgi.html#searx-uwsgi"><span class="std std-ref">uwsgi</span></a></p></li>
+<li><p>Searx: <a class="reference internal" href="installation-searx.html#installation-basic"><span class="std std-ref">Step by step installation</span></a></p></li>
+</ul>
+</div>
+<p>Herein you will find some hints and suggestions about typical architectures of
+searx infrastructures.</p>
+<p>We start with a contribution from <a class="reference external" href="https://github.com/searx/searx/pull/1776#issuecomment-567917320">&#64;dalf</a>.
+It shows a <em>reference</em> setup for public searx instances which can build up and
+maintained by the scripts from our <a class="reference internal" href="../utils/index.html#toolboxing"><span class="std std-ref">Tooling box utils/*</span></a>.</p>
+<div class="figure align-default" id="id2">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">digraph</span> <span class="n">G</span> <span class="p">{</span>
+
+  <span class="n">node</span> <span class="p">[</span><span class="n">style</span><span class="o">=</span><span class="n">filled</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">box</span><span class="p">,</span> <span class="n">fillcolor</span><span class="o">=</span><span class="s2">&quot;#ffffcc&quot;</span><span class="p">,</span> <span class="n">fontname</span><span class="o">=</span><span class="s2">&quot;Sans&quot;</span><span class="p">];</span>
+  <span class="n">edge</span> <span class="p">[</span><span class="n">fontname</span><span class="o">=</span><span class="s2">&quot;Sans&quot;</span><span class="p">];</span>
+
+  <span class="n">browser</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Browser&quot;</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">Mdiamond</span><span class="p">];</span>
+  <span class="n">rp</span>      <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Reverse Proxy&quot;</span><span class="p">,</span> <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://searx.github.io/searx/utils/filtron.sh.html#public-reverse-proxy&quot;</span><span class="p">];</span>
+  <span class="n">filtron</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Filtron&quot;</span><span class="p">,</span>       <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://searx.github.io/searx/utils/filtron.sh.html&quot;</span><span class="p">];</span>
+  <span class="n">morty</span>   <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Morty&quot;</span><span class="p">,</span>         <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://searx.github.io/searx/utils/morty.sh.html&quot;</span><span class="p">];</span>
+  <span class="n">static</span>  <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Static files&quot;</span><span class="p">,</span>  <span class="n">href</span><span class="o">=</span><span class="s2">&quot;url to configure static files&quot;</span><span class="p">];</span>
+  <span class="n">uwsgi</span>   <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;uwsgi&quot;</span><span class="p">,</span>         <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://searx.github.io/searx/utils/searx.sh.html&quot;</span><span class="p">]</span>
+  <span class="n">searx1</span>  <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Searx #1&quot;</span><span class="p">];</span>
+  <span class="n">searx2</span>  <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Searx #2&quot;</span><span class="p">];</span>
+  <span class="n">searx3</span>  <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Searx #3&quot;</span><span class="p">];</span>
+  <span class="n">searx4</span>  <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Searx #4&quot;</span><span class="p">];</span>
+
+  <span class="n">browser</span> <span class="o">-&gt;</span> <span class="n">rp</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;HTTPS&quot;</span><span class="p">]</span>
+
+  <span class="n">subgraph</span> <span class="n">cluster_searx</span> <span class="p">{</span>
+      <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;Searx instance&quot;</span> <span class="n">fontname</span><span class="o">=</span><span class="s2">&quot;Sans&quot;</span><span class="p">;</span>
+      <span class="n">bgcolor</span><span class="o">=</span><span class="s2">&quot;#fafafa&quot;</span><span class="p">;</span>
+      <span class="p">{</span> <span class="n">rank</span><span class="o">=</span><span class="n">same</span><span class="p">;</span> <span class="n">static</span> <span class="n">rp</span> <span class="p">};</span>
+      <span class="n">rp</span> <span class="o">-&gt;</span> <span class="n">morty</span>      <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;optional: images and HTML pages proxy&quot;</span><span class="p">];</span>
+      <span class="n">rp</span> <span class="o">-&gt;</span> <span class="n">static</span>     <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;optional: reverse proxy serves directly static files&quot;</span><span class="p">];</span>
+      <span class="n">rp</span> <span class="o">-&gt;</span> <span class="n">filtron</span>    <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;HTTP&quot;</span><span class="p">];</span>
+      <span class="n">filtron</span> <span class="o">-&gt;</span> <span class="n">uwsgi</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;HTTP&quot;</span><span class="p">];</span>
+      <span class="n">uwsgi</span> <span class="o">-&gt;</span> <span class="n">searx1</span><span class="p">;</span>
+      <span class="n">uwsgi</span> <span class="o">-&gt;</span> <span class="n">searx2</span><span class="p">;</span>
+      <span class="n">uwsgi</span> <span class="o">-&gt;</span> <span class="n">searx3</span><span class="p">;</span>
+      <span class="n">uwsgi</span> <span class="o">-&gt;</span> <span class="n">searx4</span><span class="p">;</span>
+  <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p class="caption"><span class="caption-number">Fig. 1 </span><span class="caption-text">Reference architecture of a public searx setup.</span><a class="headerlink" href="#id2" title="Permalink to this image">¶</a></p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+  <span id="sidebar-top"></span>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/searx_logo_small.png" alt="Logo"/>
+            </a></p>
+  
+
+  <h3>Project Links</h3>
+  <ul>
+    <li><a href="https://github.com/searx/searx">Source</a>
+  
+    <li><a href="https://github.com/searx/searx/wiki">Wiki</a>
+  
+    <li><a href="https://searx.space/">Public instances</a>
+  
+    <li><a href="https://twitter.com/Searx_engine">Twitter</a>
+  </ul><h3>Navigation</h3>
+<ul>
+  <li><a href="../index.html">Overview</a>
+    <ul>
+      <li><a href="index.html">Administrator documentation</a>
+        <ul>
+          <li>Previous: <a href="api.html" title="previous chapter">Administration API</a>
+          <li>Next: <a href="filtron.html" title="next chapter">How to protect an instance</a></ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2020, Adam Tauber, Noémi Ványi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  <script src="../_static/version_warning_offset.js"></script>
+
+  </body>
+</html>

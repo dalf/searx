@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Installation &#8212; Searx Documentation (Searx-0.17.0.tex)</title>
+    <link rel="stylesheet" href="../_static/searx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/tabs.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Step by step installation" href="installation-searx.html" />
+    <link rel="prev" title="Administrator documentation" href="index.html" />
+  <script>DOCUMENTATION_OPTIONS.URL_ROOT = '../';</script>
+   
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="installation-searx.html" title="Step by step installation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Administrator documentation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Searx Documentation (Searx-0.17.0.tex)</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Administrator documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Installation</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p><em>You’re spoilt for choice</em>, choose your preferred method of installation.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="installation-docker.html#installation-docker"><span class="std std-ref">Docker installation</span></a></p></li>
+<li><p><a class="reference internal" href="#installation-scripts"><span class="std std-ref">Installation scripts</span></a></p></li>
+<li><p><a class="reference internal" href="installation-searx.html#installation-basic"><span class="std std-ref">Step by step installation</span></a></p></li>
+</ul>
+<p>The <a class="reference internal" href="installation-searx.html#installation-basic"><span class="std std-ref">Step by step installation</span></a> is good enough for intranet usage and it is a
+excellent illustration of <em>how a searx instance is build up</em>.  If you place your
+instance public to the internet you should really consider to install a
+<a class="reference internal" href="../utils/filtron.sh.html#filtron-sh"><span class="std std-ref">filtron reverse proxy</span></a> and for privacy a <a class="reference internal" href="../utils/morty.sh.html#morty-sh"><span class="std std-ref">result proxy</span></a> is mandatory.</p>
+<p>Therefore, if you do not have any special preferences, its recommend to use the
+<a class="reference internal" href="installation-docker.html#installation-docker"><span class="std std-ref">Docker installation</span></a> or the <a class="reference internal" href="#installation-scripts">Installation scripts</a> from our <a class="reference internal" href="../utils/index.html#toolboxing"><span class="std std-ref">tooling
+box</span></a> as described below.</p>
+<div class="section" id="installation-scripts">
+<span id="id2"></span><h2>Installation scripts<a class="headerlink" href="#installation-scripts" title="Permalink to this headline">¶</a></h2>
+<div class="sidebar">
+<p class="sidebar-title">Update OS first!</p>
+<p>To avoid unwanted side effects, update your OS before installing searx.</p>
+</div>
+<p>The following will install a setup as shown in <a class="reference internal" href="architecture.html#architecture"><span class="std std-ref">Architecture</span></a>.  First you
+need to get a clone.  The clone is only needed for the installation procedure
+and some maintenance tasks (alternatively you can create your own fork).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> ~/Downloads
+$ git clone https://github.com/searx/searx searx
+$ <span class="nb">cd</span> searx
+</pre></div>
+</div>
+<p><strong>Install</strong> <a class="reference internal" href="../utils/searx.sh.html#searx-sh"><span class="std std-ref">searx service</span></a></p>
+<p>This installs searx as described in <a class="reference internal" href="installation-searx.html#installation-basic"><span class="std std-ref">Step by step installation</span></a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo -H ./utils/searx.sh install all
+</pre></div>
+</div>
+<p><strong>Install</strong> <a class="reference internal" href="../utils/filtron.sh.html#filtron-sh"><span class="std std-ref">filtron reverse proxy</span></a></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo -H ./utils/filtron.sh install all
+</pre></div>
+</div>
+<p><strong>Install</strong> <a class="reference internal" href="../utils/morty.sh.html#morty-sh"><span class="std std-ref">result proxy</span></a></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo -H ./utils/morty.sh install all
+</pre></div>
+</div>
+<p>If all services are running fine, you can add it to your HTTP server:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="installation-apache.html#installation-apache"><span class="std std-ref">Install with apache</span></a></p></li>
+<li><p><a class="reference internal" href="installation-nginx.html#installation-nginx"><span class="std std-ref">Install with nginx</span></a></p></li>
+</ul>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+  <span id="sidebar-top"></span>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/searx_logo_small.png" alt="Logo"/>
+            </a></p>
+  
+
+  <h3>Project Links</h3>
+  <ul>
+    <li><a href="https://github.com/searx/searx">Source</a>
+  
+    <li><a href="https://github.com/searx/searx/wiki">Wiki</a>
+  
+    <li><a href="https://searx.space/">Public instances</a>
+  
+    <li><a href="https://twitter.com/Searx_engine">Twitter</a>
+  </ul><h3>Navigation</h3>
+<ul>
+  <li><a href="../index.html">Overview</a>
+    <ul>
+      <li><a href="index.html">Administrator documentation</a>
+        <ul>
+          <li>Previous: <a href="index.html" title="previous chapter">Administrator documentation</a>
+          <li>Next: <a href="installation-searx.html" title="next chapter">Step by step installation</a></ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2020, Adam Tauber, Noémi Ványi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  <script src="../_static/version_warning_offset.js"></script>
+
+  </body>
+</html>

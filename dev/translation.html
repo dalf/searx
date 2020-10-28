@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Translation &#8212; Searx Documentation (Searx-0.17.0.tex)</title>
+    <link rel="stylesheet" href="../_static/searx.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/segment.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/menu.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/semantic-ui-2.4.1/tab.min.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_tabs/tabs.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Makefile Targets" href="makefile.html" />
+    <link rel="prev" title="Plugins" href="plugins.html" />
+  <script>DOCUMENTATION_OPTIONS.URL_ROOT = '../';</script>
+   
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="makefile.html" title="Makefile Targets"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="plugins.html" title="Plugins"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Searx Documentation (Searx-0.17.0.tex)</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Developer documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Translation</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="translation">
+<span id="id1"></span><h1>Translation<a class="headerlink" href="#translation" title="Permalink to this headline">¶</a></h1>
+<p>Translation currently takes place on <a class="reference external" href="https://www.transifex.com/asciimoo/searx/">searx&#64;transifex</a></p>
+<div class="section" id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>Transifex account</p></li>
+<li><p>Installed CLI tool of Transifex</p></li>
+</ul>
+</div>
+<div class="section" id="init-transifex-project">
+<h2>Init Transifex project<a class="headerlink" href="#init-transifex-project" title="Permalink to this headline">¶</a></h2>
+<p>After installing <code class="docutils literal notranslate"><span class="pre">transifex</span></code> using pip, run the following command to
+initialize the project.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>tx init <span class="c1"># Transifex instance: https://www.transifex.com/asciimoo/searx/</span>
+</pre></div>
+</div>
+<p>After <code class="docutils literal notranslate"><span class="pre">$HOME/.transifexrc</span></code> is created, get a Transifex API key and insert it
+into the configuration file.</p>
+<p>Create a configuration file for <code class="docutils literal notranslate"><span class="pre">tx</span></code> named <code class="docutils literal notranslate"><span class="pre">$HOME/.tx/config</span></code>.</p>
+<div class="highlight-ini notranslate"><div class="highlight"><pre><span></span><span class="k">[main]</span>
+<span class="na">host</span> <span class="o">=</span> <span class="s">https://www.transifex.com</span>
+<span class="k">[searx.messagespo]</span>
+<span class="na">file_filter</span> <span class="o">=</span> <span class="s">searx/translations/&lt;lang&gt;/LC_MESSAGES/messages.po</span>
+<span class="na">source_file</span> <span class="o">=</span> <span class="s">messages.pot</span>
+<span class="na">source_lang</span> <span class="o">=</span> <span class="s">en</span>
+<span class="na">type</span> <span class="o">=</span> <span class="s">PO</span>
+</pre></div>
+</div>
+<p>Then run <code class="docutils literal notranslate"><span class="pre">tx</span> <span class="pre">set</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>tx <span class="nb">set</span> --auto-local -r searx.messagespo <span class="s1">&#39;searx/translations/&lt;lang&gt;/LC_MESSAGES/messages.po&#39;</span> <span class="se">\</span>
+--source-lang en --type PO --source-file messages.pot --execute
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-translations">
+<h2>Update translations<a class="headerlink" href="#update-translations" title="Permalink to this headline">¶</a></h2>
+<p>To retrieve the latest translations, pull it from Transifex.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>tx pull -a
+</pre></div>
+</div>
+<p>Then check the new languages.  If strings translated are not enough, delete those
+folders, because those should not be compiled.  Call the command below to compile
+the <code class="docutils literal notranslate"><span class="pre">.po</span></code> files.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pybabel compile -d searx/translations
+</pre></div>
+</div>
+<p>After the compilation is finished commit the <code class="docutils literal notranslate"><span class="pre">.po</span></code> and <code class="docutils literal notranslate"><span class="pre">.mo</span></code> files and
+create a PR.</p>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+  <span id="sidebar-top"></span>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  
+    
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/searx_logo_small.png" alt="Logo"/>
+            </a></p>
+  
+
+  <h3>Project Links</h3>
+  <ul>
+    <li><a href="https://github.com/searx/searx">Source</a>
+  
+    <li><a href="https://github.com/searx/searx/wiki">Wiki</a>
+  
+    <li><a href="https://searx.space/">Public instances</a>
+  
+    <li><a href="https://twitter.com/Searx_engine">Twitter</a>
+  </ul><h3>Navigation</h3>
+<ul>
+  <li><a href="../index.html">Overview</a>
+    <ul>
+      <li><a href="index.html">Developer documentation</a>
+        <ul>
+          <li>Previous: <a href="plugins.html" title="previous chapter">Plugins</a>
+          <li>Next: <a href="makefile.html" title="next chapter">Makefile Targets</a></ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+  
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2020, Adam Tauber, Noémi Ványi.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  <script src="../_static/version_warning_offset.js"></script>
+
+  </body>
+</html>
