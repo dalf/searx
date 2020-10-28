@@ -592,7 +592,7 @@ in a specific way.</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">:download:`this</span> <span class="pre">file</span> <span class="pre">&lt;reST.rst&gt;`</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#math">math</a></p></td>
-<td><p><span class="math">a^2 + b^2 = c^2</span></p></td>
+<td><p><img class="math" src="../_images/math/6673b43f9fe29455c1fcd1164e5844698cc64d38.svg" alt="a^2 + b^2 = c^2"/></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">:math:`a^2</span> <span class="pre">+</span> <span class="pre">b^2</span> <span class="pre">=</span> <span class="pre">c^2`</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/roles.html#role-ref" title="(in Sphinx v4.0.0+)"><code class="xref rst rst-role docutils literal notranslate"><span class="pre">ref</span></code></a></p></td>
@@ -683,12 +683,7 @@ given.</p>
 <div class="rst-example admonition">
 <p class="admonition-title">hello.dot</p>
 <div class="figure align-default" id="id8">
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">graph</span> <span class="n">G</span> <span class="p">{</span>
-      <span class="n">Hello</span> <span class="o">--</span> <span class="n">World</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p class="caption"><span class="caption-number">Fig. 3 </span><span class="caption-text">DOT’s hello world example</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
+<img alt="hello world" src="../_images/hello.svg" /><p class="caption"><span class="caption-number">Fig. 3 </span><span class="caption-text">DOT’s hello world example</span><a class="headerlink" href="#id8" title="Permalink to this image">¶</a></p>
 </div>
 </div>
 </div>
@@ -717,12 +712,7 @@ installed, you will see an vector image.  If not, the raw markup is inserted as
 <div class="rst-example admonition">
 <p class="admonition-title">kernel-render DOT</p>
 <div class="figure align-default" id="id9">
-<span id="dot-render-example"></span><div class="highlight-none notranslate"><div class="highlight"><pre><span></span>digraph foo {
-  &quot;bar&quot; -&gt; &quot;baz&quot;;
-}
-</pre></div>
-</div>
-<p class="caption"><span class="caption-number">Fig. 4 </span><span class="caption-text">Embedded  DOT (Graphviz) code</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
+<span id="dot-render-example"></span><img alt="digraph" src="../_images/DOT-57a4a7f78690d0b6b884bc59f36e84cfb0b61f76.svg" /><p class="caption"><span class="caption-number">Fig. 4 </span><span class="caption-text">Embedded  DOT (Graphviz) code</span><a class="headerlink" href="#id9" title="Permalink to this image">¶</a></p>
 </div>
 <p>Attribute <code class="docutils literal notranslate"><span class="pre">caption</span></code> is needed, if you want to refer the figure: <a class="reference internal" href="#dot-render-example"><span class="std std-ref">Embedded  DOT (Graphviz) code</span></a>.</p>
 </div>
@@ -1529,8 +1519,8 @@ is shown.
 <p>In <a class="reference internal" href="#equation-schroedinger-general">(1)</a> the time-dependent Schrödinger equation
 is shown.</p>
 <div class="math" id="equation-schroedinger-general">
-<p><span class="eqno">(1)<a class="headerlink" href="#equation-schroedinger-general" title="Permalink to this equation">¶</a></span><span class="math">\mathrm{i}\hbar\dfrac{\partial}{\partial t} |\,\psi (t) \rangle =
-       \hat{H} |\,\psi (t) \rangle.</span></p>
+<p><span class="eqno">(1)<a class="headerlink" href="#equation-schroedinger-general" title="Permalink to this equation">¶</a></span><img src="../_images/math/a6a994cb6e7278ec30eaebe7e636046d3deccb5b.svg" alt="\mathrm{i}\hbar\dfrac{\partial}{\partial t} |\,\psi (t) \rangle =
+       \hat{H} |\,\psi (t) \rangle."/></p>
 </div></div>
 <p>The next example shows the difference of <code class="docutils literal notranslate"><span class="pre">\tfrac</span></code> (<em>textstyle</em>) and <code class="docutils literal notranslate"><span class="pre">\dfrac</span></code>
 (<em>displaystyle</em>) used in a inline markup or another fraction.</p>
@@ -1543,13 +1533,13 @@ is shown.</p>
 <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
 eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
 voluptua.  …
-<code class="docutils literal notranslate"><span class="pre">\tfrac</span></code> <strong>inline example</strong> <span class="math">\tfrac{\tfrac{1}{x}+\tfrac{1}{y}}{y-z}</span>
+<code class="docutils literal notranslate"><span class="pre">\tfrac</span></code> <strong>inline example</strong> <img class="math" src="../_images/math/3b8127a8eed95247f9249ea6c85e8e86df1baa82.svg" alt="\tfrac{\tfrac{1}{x}+\tfrac{1}{y}}{y-z}"/>
 At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd
 gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
 <p>Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy
 eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam
 voluptua.  …
-<code class="docutils literal notranslate"><span class="pre">\tfrac</span></code> <strong>inline example</strong> <span class="math">\dfrac{\dfrac{1}{x}+\dfrac{1}{y}}{y-z}</span>
+<code class="docutils literal notranslate"><span class="pre">\tfrac</span></code> <strong>inline example</strong> <img class="math" src="../_images/math/07c9ff4251510b06013159f4e45ec9ab97044096.svg" alt="\dfrac{\dfrac{1}{x}+\dfrac{1}{y}}{y-z}"/>
 At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd
 gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</p>
 </div>
