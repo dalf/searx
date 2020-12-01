@@ -24,12 +24,6 @@
         <link rel="stylesheet" href="{{ url_for('static', filename=css) }}" type="text/css" />
     {% endfor %}
 
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="{{ url_for('static', filename='js/html5shiv.min.js') }}"></script>
-      <script src="{{ url_for('static', filename='js/respond.min.js') }}"></script>
-    <![endif]-->
-
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.png') }}" />
 
     {% block styles %}
@@ -93,7 +87,7 @@
             </p>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/jquery-1.11.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery-3.5.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     {% if autocomplete %}    <script src="{{ url_for('static', filename='js/typeahead.bundle.min.js') }}"></script>{% endif %}
 

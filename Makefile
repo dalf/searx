@@ -152,8 +152,8 @@ node.clean:
 # build themes
 # ------------
 
-PHONY += themes.bootstrap themes themes.oscar themes.simple themes.legacy themes.courgette themes.pixart
-themes: buildenv themes.bootstrap themes.oscar themes.simple themes.legacy themes.courgette themes.pixart
+PHONY += themes themes.oscar themes.simple themes.legacy themes.courgette themes.pixart
+themes: buildenv themes.oscar themes.simple themes.legacy themes.courgette themes.pixart
 
 quiet_cmd_lessc = LESSC     $3
       cmd_lessc = PATH="$$(npm bin):$$PATH" \
@@ -184,9 +184,6 @@ themes.courgette: node.env
 themes.pixart: node.env
 	$(Q)echo '[!] build pixart theme'
 	$(call cmd,lessc,themes/pix-art/less/style.less,themes/pix-art/css/style.css)
-
-themes.bootstrap: node.env
-	$(call cmd,lessc,less/bootstrap/bootstrap.less,css/bootstrap.min.css)
 
 
 # docker
