@@ -85,14 +85,13 @@ jobs:
 
   dockers:
     name: Docker
-    if: github.ref == 'refs/heads/master'
     needs:
       - python
       - themes
       - documentation
     env:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout
         if: env.DOCKERHUB_USERNAME != null
